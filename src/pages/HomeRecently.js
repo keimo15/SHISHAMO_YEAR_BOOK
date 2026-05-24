@@ -6,6 +6,7 @@ export default function Home() {
   const [today, setToday] = useState({ month: 0, day: 0 });
   const [nichoku, setNichoku] = useState("");
   const [petals, setPetals] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     const date = new Date();
@@ -30,6 +31,14 @@ export default function Home() {
       });
     }
     setPetals(petalsArr);
+
+    // スマホサイズの取得.
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+
   }, []);
 
   const tabs = [
@@ -70,13 +79,13 @@ export default function Home() {
           width: "92%",
           height: "88vh",
           position: "relative",
-          border: "10px solid #fff",
+          border: isMobile ? "none" : "10px solid #fff",
           borderRadius: "12px",
           boxShadow: "inset 0 0 25px rgba(0,0,0,0.4)",
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",
-          paddingRight: "120px",
+          paddingRight: isMobile ? "0px" : "120px",
           overflow: "hidden",
           zIndex: 1,
         }}
@@ -113,45 +122,47 @@ export default function Home() {
         </div>
 
         {/* 日付＋日直（縦書き、数字のみ横） */}
-        <div
-          style={{
-            position: "absolute",
-            right: "40px",
-            top: "10%",
-            color: "white",
-            writingMode: "vertical-rl",
-            fontSize: "2.8rem",
-            lineHeight: "2.6rem",
-            textAlign: "center",
-            zIndex: 3,
-          }}
-        >
-          <span style={{ transform: "rotate(0deg)", display: "inline-block" }}>
-            <span
-              style={{
-                writingMode: "horizontal-tb",
-                fontSize: "2.4rem",
-                display: "inline-block",
-                verticalAlign: "middle",
-                marginRight: "10px",
-              }}
-            >
-              {today.month}
+        {!isMobile && (
+          <div
+            style={{
+              position: "absolute",
+              right: "40px",
+              top: "10%",
+              color: "white",
+              writingMode: "vertical-rl",
+              fontSize: "2.8rem",
+              lineHeight: "2.6rem",
+              textAlign: "center",
+              zIndex: 3,
+            }}
+          >
+            <span style={{ transform: "rotate(0deg)", display: "inline-block" }}>
+              <span
+                style={{
+                  writingMode: "horizontal-tb",
+                  fontSize: "2.4rem",
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                  marginRight: "10px",
+                }}
+              >
+                {today.month}
+              </span>
+              月
+              <span
+                style={{
+                  writingMode: "horizontal-tb",
+                  fontSize: "2.4rem",
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                }}
+              >
+                {today.day}
+              </span>
+              日 日直 {nichoku}
             </span>
-            月
-            <span
-              style={{
-                writingMode: "horizontal-tb",
-                fontSize: "2.4rem",
-                display: "inline-block",
-                verticalAlign: "middle",
-              }}
-            >
-              {today.day}
-            </span>
-            日 日直 {nichoku}
-          </span>
-        </div>
+          </div>
+        )}
 
         {/* アルバム本体 */}
         <div
