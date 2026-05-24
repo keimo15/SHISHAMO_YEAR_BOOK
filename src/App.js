@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Countdown from "./pages/Countdown";
 import Cover from "./pages/Cover";
 import Home from "./pages/Home";
@@ -27,6 +27,7 @@ function App() {
           // これは消す
         }
         <Route path="/home0" element={<HomeRecently />} />
+        <Route path="/" element={<HomeRecently />} />
       </Routes>
     </Router>
   );
