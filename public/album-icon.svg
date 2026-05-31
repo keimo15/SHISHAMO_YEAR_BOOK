@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92" fill="#fff8f6"/>
+  <rect x="102" y="84" width="326" height="356" rx="25" fill="#b84444"/>
+  <rect x="82" y="68" width="326" height="356" rx="25" fill="#e56a6c"/>
+  <rect x="102" y="68" width="22" height="356" fill="#ce595c"/>
+  <path d="M102 68h22v356h-22z" fill="url(#spine)"/>
+  <rect x="110" y="94" width="270" height="304" rx="12" fill="none" stroke="#fff3e9" stroke-width="8"/>
+  <text x="245" y="236" fill="#fffdf7" font-family="Arial, sans-serif" font-size="32" font-weight="700" text-anchor="middle">SHISHAMO</text>
+  <text x="245" y="298" fill="#fffdf7" font-family="Arial, sans-serif" font-size="72" font-weight="700" text-anchor="middle">卒業制作</text>
+  <defs>
+    <linearGradient id="spine" x1="102" x2="124" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b84444"/>
+      <stop offset="1" stop-color="#e56a6c"/>
+    </linearGradient>
+  </defs>
+</svg>

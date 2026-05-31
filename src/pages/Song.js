@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { albums } from "../data/songs";
 import bcrypt from "bcryptjs";
 import { Trash2 } from "lucide-react";
+import EmptyNote from "../components/EmptyNote";
 
 const YELLOW_SONGS = new Set(["はなればなれでも", "マフラー"]);
 const BLUE_SONGS = new Set([
@@ -434,9 +435,9 @@ export default function SongsPage() {
         >
           {selectedAlbum === RANKING_ALBUM.name ? (
             rankedSongs.length === 0 ? (
-              <p style={{ margin: 0, color: "#9a8069" }}>
+              <EmptyNote style={{ margin: "4px auto" }}>
                 まだランキングに表示できる投稿がありません。
-              </p>
+              </EmptyNote>
             ) : (
               <div
                 style={{
@@ -611,18 +612,7 @@ export default function SongsPage() {
               </div>
 
               {filteredPosts.length === 0 ? (
-                <div
-                  style={{
-                    background: "white",
-                    padding: "30px",
-                    borderRadius: "20px",
-                    textAlign: "center",
-                    color: "#999",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  まだ投稿がありません 📮
-                </div>
+                <EmptyNote>まだ投稿がありません。</EmptyNote>
               ) : (
                 <div
                   style={{

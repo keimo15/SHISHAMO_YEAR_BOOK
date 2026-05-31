@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function Countdown() {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [peelingPages, setPeelingPages] = useState([]);
   const [isOpening, setIsOpening] = useState(false);
   const countdownItems = [
     { label: "DAYS", value: timeLeft.days },
@@ -22,6 +23,10 @@ export default function Countdown() {
   // 🔸 カウントダウン更新
   useEffect(() => {
     const target = new Date("2026-06-14T20:00:00");
+    const previousTime = { current: null };
+    const peelTimers = [];
+    let peelId = 0;
+
     const update = () => {
       const now = new Date();
       const diff = target - now;
@@ -34,12 +39,40 @@ export default function Countdown() {
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
       const seconds = Math.floor((diff / 1000) % 60);
-      setTimeLeft({ days, hours, minutes, seconds });
+      const nextTime = { days, hours, minutes, seconds };
+
+      if (previousTime.current) {
+        const changedPages = ["days", "hours", "minutes"]
+          .filter((unit) => previousTime.current[unit] !== nextTime[unit])
+          .map((unit) => ({
+            id: ++peelId,
+            unit,
+            value: previousTime.current[unit],
+          }));
+
+        if (changedPages.length > 0) {
+          setPeelingPages((current) => [...current, ...changedPages]);
+          peelTimers.push(
+            setTimeout(() => {
+              const changedIds = new Set(changedPages.map((page) => page.id));
+              setPeelingPages((current) =>
+                current.filter((page) => !changedIds.has(page.id))
+              );
+            }, 950)
+          );
+        }
+      }
+
+      previousTime.current = nextTime;
+      setTimeLeft(nextTime);
     };
 
     update();
     const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      peelTimers.forEach(clearTimeout);
+    };
   }, [navigate]);
 
   // 🔸 画面クリックで表紙へ
@@ -83,26 +116,14 @@ export default function Countdown() {
             position: "absolute",
             top: "-15px",
             left: "50%",
-            width: "110px",
-            height: "30px",
             transform: "translateX(-50%) rotate(-2deg)",
-            background: "rgba(244,215,142,0.64)",
-            boxShadow: "0 1px 2px rgba(125,90,47,0.1)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "22px",
-            right: "18px",
-            padding: "5px 11px",
+            padding: "6px 14px",
             borderRadius: "20px",
             background: "#e46c6c",
             color: "#fff",
             boxShadow: "2px 2px 0 rgba(0,0,0,0.1)",
-            fontSize: "clamp(0.58rem, 2vw, 0.8rem)",
+            fontSize: "0.9rem",
             fontWeight: "bold",
-            transform: "rotate(6deg)",
           }}
         >
           ✕ しゃもサポの卒業制作
@@ -135,9 +156,19 @@ export default function Countdown() {
         <div className="countdown-grid">
           {countdownItems.map((item) => (
             <div className="countdown-card" key={item.label}>
-              <strong>
-                {String(item.value).padStart(2, "0")}
-              </strong>
+              <div className="countdown-number">
+                <strong>
+                  {String(item.value).padStart(2, "0")}
+                </strong>
+                {item.label !== "SECONDS" &&
+                  peelingPages
+                    .filter((page) => page.unit === item.label.toLowerCase())
+                    .map((page) => (
+                      <div className="countdown-peel" key={page.id}>
+                        {String(page.value).padStart(2, "0")}
+                      </div>
+                    ))}
+              </div>
               <span>{item.label}</span>
             </div>
           ))}
@@ -168,12 +199,33 @@ export default function Countdown() {
             box-shadow: 2px 3px 0 rgba(137, 102, 64, 0.1);
           }
 
-          .countdown-card strong {
+          .countdown-number {
+            position: relative;
+          }
+
+          .countdown-card strong,
+          .countdown-peel {
             color: #e46c6c;
             font-family: serif;
             font-size: clamp(2rem, 8vw, 4.5rem);
             font-variant-numeric: tabular-nums;
             line-height: 1;
+          }
+
+          .countdown-peel {
+            position: absolute;
+            inset: -7px -3px -5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(203, 117, 110, 0.16);
+            border-radius: 2px;
+            background: #fffdf7;
+            box-shadow: 0 3px 4px rgba(126, 91, 55, 0.12);
+            transform-origin: top center;
+            animation: countdown-peel-off 0.9s cubic-bezier(0.36, 0, 0.66, -0.2) forwards;
+            pointer-events: none;
+            z-index: 3;
           }
 
           .countdown-card span {
@@ -196,6 +248,21 @@ export default function Countdown() {
           @keyframes countdown-pulse {
             0%, 100% { opacity: 0.62; }
             50% { opacity: 1; }
+          }
+
+          @keyframes countdown-peel-off {
+            0% {
+              opacity: 1;
+              transform: rotateX(0deg) rotateZ(0deg) translateY(0);
+            }
+            28% {
+              opacity: 1;
+              transform: rotateX(38deg) rotateZ(-3deg) translateY(5px);
+            }
+            100% {
+              opacity: 0;
+              transform: rotateX(72deg) rotateZ(10deg) translateY(88px);
+            }
           }
 
           @media (prefers-reduced-motion: reduce) {

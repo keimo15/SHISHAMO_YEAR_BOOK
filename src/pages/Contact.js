@@ -8,7 +8,8 @@ export default function Contact() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#fffef8",
+        background:
+          "radial-gradient(circle at 18% 12%, rgba(255,255,255,0.72), transparent 24%), repeating-linear-gradient(0deg, rgba(177,142,96,0.045) 0 1px, transparent 1px 24px), #f5ead5",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -21,21 +22,50 @@ export default function Contact() {
         style={{
           width: "100%",
           maxWidth: "620px",
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "32px 20px",
+          position: "relative",
+          background:
+            "repeating-linear-gradient(0deg, transparent 0 25px, rgba(130,170,190,0.08) 25px 26px), #fffdf4",
+          border: "1px solid rgba(174,139,91,0.28)",
+          borderRadius: "4px",
+          padding: "42px clamp(20px, 5vw, 42px) 34px",
           boxSizing: "border-box",
-          boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+          boxShadow:
+            "6px 8px 0 rgba(145,105,64,0.14), 0 16px 34px rgba(105,75,45,0.14)",
           textAlign: "center",
         }}
       >
-        <h1 style={{ marginTop: 0, color: "#444" }}>お問い合わせ</h1>
+        <div
+          style={{
+            position: "absolute",
+            top: "-15px",
+            left: "50%",
+            width: "110px",
+            height: "30px",
+            transform: "translateX(-50%) rotate(-2deg)",
+            background: "rgba(244,215,142,0.64)",
+          }}
+        />
+        <p
+          style={{
+            margin: 0,
+            color: "#c66a68",
+            fontFamily: "sans-serif",
+            fontSize: "0.64rem",
+            fontWeight: "bold",
+            letterSpacing: "0.22em",
+          }}
+        >
+          CONTACT
+        </p>
+        <h1 style={{ margin: "6px 0 18px", color: "#d66565" }}>
+          お問い合わせ
+        </h1>
 
         <p
           style={{
             maxWidth: "480px",
             margin: "0 auto",
-            color: "#555",
+            color: "#6a5140",
             lineHeight: "2",
             textAlign: "left",
           }}
@@ -51,12 +81,13 @@ export default function Contact() {
           style={{
             display: "inline-block",
             marginTop: "18px",
-            background: "#222",
+            background: "#e46c6c",
             color: "#fff",
             padding: "12px 18px",
             borderRadius: "999px",
             textDecoration: "none",
             fontWeight: "bold",
+            boxShadow: "0 3px 0 #b84242",
           }}
         >
           管理人のXプロフィールを開く

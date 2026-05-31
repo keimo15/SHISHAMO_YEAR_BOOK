@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import bcrypt from "bcryptjs";
 import { db } from "../firebase";
 import {
@@ -74,7 +74,7 @@ async function saveContributor(name, sns) {
       contributor.sns = contributorSns;
     }
 
-    if (!snapshot.exists()) {
+    if (!snapshot.exists() || !snapshot.data().createdAt) {
       contributor.createdAt = serverTimestamp();
     }
 
@@ -89,12 +89,44 @@ export default function PostForms({ onBack }) {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [completedPost, setCompletedPost] = useState(null);
+  const [submittingPaper, setSubmittingPaper] = useState(null);
+  const [consentDialogOpen, setConsentDialogOpen] = useState(false);
+  const [publicationConsent, setPublicationConsent] = useState(false);
+  const [printConsent, setPrintConsent] = useState(false);
+  const [profileConsent, setProfileConsent] = useState(false);
+  const consentResolverRef = useRef(null);
   const handleSubmitted = (post) => setCompletedPost(post);
+  const requestConsent = () => {
+    setPublicationConsent(false);
+    setPrintConsent(false);
+    setProfileConsent(false);
+    setConsentDialogOpen(true);
+
+    return new Promise((resolve) => {
+      consentResolverRef.current = resolve;
+    });
+  };
+  const closeConsentDialog = (accepted) => {
+    if (accepted && (!publicationConsent || !printConsent || !profileConsent)) return;
+
+    setConsentDialogOpen(false);
+    consentResolverRef.current?.(accepted);
+    consentResolverRef.current = null;
+  };
+  const closeWithPaperAnimation = () => {
+    if (!completedPost || submittingPaper) return;
+
+    setSubmittingPaper(completedPost);
+    setTimeout(() => {
+      setSubmittingPaper(null);
+      setCompletedPost(null);
+    }, 900);
+  };
   const forms = [
-    { component: <MessageForm onSubmitted={handleSubmitted} />, icon: "✉", title: "SHISHAMO へ", note: "メッセージ" },
-    { component: <MemoryForm onSubmitted={handleSubmitted} />, icon: "⌖", title: "マップ", note: "場所の思い出" },
-    { component: <MemoryDateForm onSubmitted={handleSubmitted} />, icon: "▣", title: "カレンダー", note: "日付の思い出" },
-    { component: <FavoriteSongForm onSubmitted={handleSubmitted} />, icon: "♪", title: "みんなのうた", note: "好きな曲" },
+    { component: <MessageForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "✉", title: "SHISHAMO へ", note: "メッセージ" },
+    { component: <MemoryForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "⌖", title: "マップ", note: "場所の思い出" },
+    { component: <MemoryDateForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "▣", title: "カレンダー", note: "日付の思い出" },
+    { component: <FavoriteSongForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "♪", title: "みんなのうた", note: "好きな曲" },
   ];
 
   return (
@@ -203,22 +235,89 @@ export default function PostForms({ onBack }) {
                     completedPost.isFirstPost,
                     completedPost.firstPostTarget
                   );
-                  setCompletedPost(null);
+                  closeWithPaperAnimation();
                 }}
+                disabled={Boolean(submittingPaper)}
                 style={{ ...buttonStyle, background: "#222" }}
               >
                 Xで共有する
               </button>
               <button
-                onClick={() => setCompletedPost(null)}
+                onClick={closeWithPaperAnimation}
+                disabled={Boolean(submittingPaper)}
                 style={{ ...buttonStyle, background: "#aaa" }}
               >
                 閉じる
               </button>
             </div>
+            {submittingPaper && (
+              <div className="submitted-paper">
+                <span>POSTED BY</span>
+                <strong>{submittingPaper.name}</strong>
+              </div>
+            )}
           </div>
         </div>
       )}
+      {consentDialogOpen && (
+        <div style={modalBackdropStyle}>
+          <div style={{ ...completionCardStyle, maxWidth: "480px", textAlign: "left" }}>
+            <div style={tapeStyle} />
+            <h3 style={{ margin: "4px 0 16px", color: "#9d3f3f", textAlign: "center" }}>
+              投稿前にご確認ください
+            </h3>
+            <p style={{ margin: "0 0 14px", color: "#777", fontSize: "0.9rem" }}>
+              以下の内容に同意いただける場合のみ投稿できます。
+            </p>
+            <label style={consentLabelStyle}>
+              <input
+                type="checkbox"
+                checked={publicationConsent}
+                onChange={(e) => setPublicationConsent(e.target.checked)}
+              />
+              <span>投稿内容を「しゃもサポの卒業制作」（Webサイト・冊子等）に掲載することに同意します</span>
+            </label>
+            <label style={consentLabelStyle}>
+              <input
+                type="checkbox"
+                checked={printConsent}
+                onChange={(e) => setPrintConsent(e.target.checked)}
+              />
+              <span>投稿内容が掲載された冊子等を、SHISHAMO本人・関係者およびしゃもサポへ配布する場合があることに同意します</span>
+            </label>
+            <label style={consentLabelStyle}>
+              <input
+                type="checkbox"
+                checked={profileConsent}
+                onChange={(e) => setProfileConsent(e.target.checked)}
+              />
+              <span>ニックネーム・SNSアカウント（入力した場合）を掲載することに同意します</span>
+            </label>
+            <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="button"
+                onClick={() => closeConsentDialog(true)}
+                disabled={!publicationConsent || !printConsent || !profileConsent}
+                style={{
+                  ...buttonStyle,
+                  background: publicationConsent && printConsent && profileConsent ? "#e46c6c" : "#c9c2b7",
+                  cursor: publicationConsent && printConsent && profileConsent ? "pointer" : "not-allowed",
+                }}
+              >
+                同意して投稿する
+              </button>
+              <button
+                type="button"
+                onClick={() => closeConsentDialog(false)}
+                style={{ ...buttonStyle, background: "#aaa" }}
+              >
+                戻る
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{submittedPaperAnimationStyle}</style>
     </div>
   );
 }
@@ -226,7 +325,7 @@ export default function PostForms({ onBack }) {
 // --------------------------------------------------
 // 各フォーム
 // --------------------------------------------------
-function MessageForm({ onSubmitted }) {
+function MessageForm({ onSubmitted, requestConsent }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
   const [target, setTarget] = useState("SHISHAMO");
@@ -249,6 +348,7 @@ function MessageForm({ onSubmitted }) {
     if (password.length < 5 || password.length > 15) {
       return alert("パスワードは5〜15文字で入力してください");
     }
+    if (!(await requestConsent())) return;
 
     setLoading(true);
     try {
@@ -262,7 +362,11 @@ function MessageForm({ onSubmitted }) {
         createdAt: serverTimestamp(),
       });
       await saveContributor(name, sns);
-      onSubmitted({ label: "SHISHAMOへのメッセージ", content: text });
+      onSubmitted({
+        label: "SHISHAMOへのメッセージ",
+        content: text,
+        name: name.trim() || ANONYMOUS_CONTRIBUTOR,
+      });
       setName(""); setSns(""); setTarget("SHISHAMO"); setText(""); setPassword("");
     } catch (err) {
       console.error(err);
@@ -367,7 +471,7 @@ function MessageForm({ onSubmitted }) {
   );
 }
 
-function MemoryForm({ onSubmitted }) {
+function MemoryForm({ onSubmitted, requestConsent }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
   const [category, setCategory] = useState("思い出");
@@ -396,6 +500,7 @@ function MemoryForm({ onSubmitted }) {
     if (password.length < 5 || password.length > 15) {
       return alert("パスワードは5〜15文字で入力してください");
     }
+    if (!(await requestConsent())) return;
 
     setLoading(true);
     try {
@@ -416,6 +521,7 @@ function MemoryForm({ onSubmitted }) {
       onSubmitted({
         label: `しゃもサポマップの思い出: ${prefecture}`,
         content: message,
+        name: name.trim() || ANONYMOUS_CONTRIBUTOR,
         isFirstPost,
         firstPostTarget: prefecture,
       });
@@ -536,7 +642,7 @@ function MemoryForm({ onSubmitted }) {
   );
 }
 
-function MemoryDateForm({ onSubmitted }) {
+function MemoryDateForm({ onSubmitted, requestConsent }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
   const [date, setDate] = useState("");
@@ -553,6 +659,7 @@ function MemoryDateForm({ onSubmitted }) {
     if (password.length < 5 || password.length > 15) {
       return alert("パスワードは5〜15文字で入力してください");
     }
+    if (!(await requestConsent())) return;
 
     setLoading(true);
     try {
@@ -572,6 +679,7 @@ function MemoryDateForm({ onSubmitted }) {
       onSubmitted({
         label: `${date}の思い出`,
         content: event,
+        name: name.trim() || ANONYMOUS_CONTRIBUTOR,
         isFirstPost,
         firstPostTarget: `${parseInt(date.slice(5, 7), 10)}月${parseInt(
           date.slice(8, 10),
@@ -652,7 +760,7 @@ function MemoryDateForm({ onSubmitted }) {
   );
 }
 
-function FavoriteSongForm({ onSubmitted }) {
+function FavoriteSongForm({ onSubmitted, requestConsent }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
   const [song, setSong] = useState("");
@@ -672,6 +780,7 @@ function FavoriteSongForm({ onSubmitted }) {
     if (password.length < 5 || password.length > 15) {
       return alert("パスワードは5〜15文字で入力してください");
     }
+    if (!(await requestConsent())) return;
 
     setLoading(true);
 
@@ -694,6 +803,7 @@ function FavoriteSongForm({ onSubmitted }) {
       onSubmitted({
         label: `好きな曲: ${song}`,
         content: reason,
+        name: name.trim() || ANONYMOUS_CONTRIBUTOR,
         isFirstPost,
         firstPostTarget: song,
       });
@@ -855,6 +965,21 @@ const formStyle = {
   textAlign: "left",
 };
 
+const consentLabelStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "9px",
+  marginTop: "12px",
+  padding: "12px",
+  border: "1px solid rgba(177, 139, 91, 0.2)",
+  borderRadius: "4px",
+  background: "rgba(255, 253, 244, 0.86)",
+  color: "#65584d",
+  fontSize: "0.92rem",
+  lineHeight: 1.6,
+  cursor: "pointer",
+};
+
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
@@ -912,6 +1037,58 @@ const completionCardStyle = {
   textAlign: "center",
   transform: "rotate(-1deg)",
 };
+
+const submittedPaperAnimationStyle = `
+  .submitted-paper {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    z-index: 4;
+    display: flex;
+    width: min(78%, 280px);
+    box-sizing: border-box;
+    padding: 14px 12px 16px;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid rgba(177, 139, 91, 0.22);
+    border-radius: 2px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 18px, rgba(130,170,190,0.08) 18px 19px),
+      #fffdf4;
+    box-shadow: 2px 4px 8px rgba(93, 66, 41, 0.18);
+    color: #6a5140;
+    font-family: serif;
+    text-align: center;
+    transform: translateX(-50%);
+    animation: submitted-paper-float 0.86s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    pointer-events: none;
+  }
+
+  .submitted-paper span {
+    color: #b8987b;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+  }
+
+  .submitted-paper strong {
+    overflow-wrap: anywhere;
+    font-size: 1.08rem;
+  }
+
+  @keyframes submitted-paper-float {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 16px) rotate(-2deg);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -190px) rotate(4deg);
+    }
+  }
+`;
 
 const tapeStyle = {
   position: "absolute",

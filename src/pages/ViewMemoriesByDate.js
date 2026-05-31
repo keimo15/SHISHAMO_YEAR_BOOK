@@ -6,6 +6,7 @@ import { db } from "../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import EmptyNote from "../components/EmptyNote";
 
 export default function ViewMemoriesByDate() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function ViewMemoriesByDate() {
   const [expandedMonth, setExpandedMonth] = useState(
     String(new Date().getMonth() + 1).padStart(2, "0")
   );
+  const [isDateListOpen, setIsDateListOpen] = useState(true);
 
   const colors = ["#ff7b7b", "#ffa74d", "#ffdc4d", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
 
@@ -180,15 +182,69 @@ export default function ViewMemoriesByDate() {
         animate={{ x: 0 }}
         transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
         style={{
-          width: isMobile ? "38%" : "210px",
+          width: isDateListOpen ? (isMobile ? "38%" : "210px") : "34px",
           overflowY: "scroll",
           overflowX: "hidden",
           borderRight: "7px solid #e4c9a4",
-          padding: isMobile ? "56px 5px 16px 8px" : "60px 8px 18px 12px",
+          padding: isDateListOpen
+            ? isMobile
+              ? "96px 5px 16px 8px"
+              : "100px 8px 18px 12px"
+            : "96px 0 16px",
           background: "#f5ead5",
           boxShadow: "inset -4px 0 0 rgba(168, 128, 81, 0.12)",
+          position: "relative",
+          flexShrink: 0,
+          transition: "width 240ms ease, padding 240ms ease",
         }}
       >
+        <button
+          type="button"
+          onClick={() => setIsDateListOpen((open) => !open)}
+          aria-label={isDateListOpen ? "日付一覧を閉じる" : "日付一覧を開く"}
+          title={isDateListOpen ? "日付一覧を閉じる" : "日付一覧を開く"}
+          style={{
+            position: "sticky",
+            top: "50%",
+            marginLeft: "auto",
+            marginRight: "1px",
+            width: "26px",
+            height: "26px",
+            border: "none",
+            borderRadius: "999px",
+            background: "#d87575",
+            color: "#fffdf6",
+            boxShadow: "1px 2px 0 rgba(146, 91, 65, 0.16)",
+            cursor: "pointer",
+            fontFamily: "'Yomogi', cursive",
+            fontSize: "1.15rem",
+            fontWeight: "bold",
+            lineHeight: 1,
+            transform: "translateY(-50%)",
+            zIndex: 2,
+            display: "block",
+          }}
+        >
+          {isDateListOpen ? "‹" : "›"}
+        </button>
+        {!isDateListOpen && (
+          <span
+            style={{
+              display: "block",
+              margin: "8px auto 0",
+              color: "#c76767",
+              fontFamily: "'Yomogi', cursive",
+              fontSize: "0.78rem",
+              fontWeight: "bold",
+              letterSpacing: "0.16em",
+              writingMode: "vertical-rl",
+            }}
+          >
+            日付
+          </span>
+        )}
+        {isDateListOpen && (
+          <>
         <h2
           style={{
             margin: "0 0 10px 4px",
@@ -315,6 +371,8 @@ export default function ViewMemoriesByDate() {
             );
           })}
         </div>
+          </>
+        )}
       </motion.div>
 
       {/* 右側：選択された日の出来事 */}
@@ -343,7 +401,7 @@ export default function ViewMemoriesByDate() {
               {parseInt(selectedDate.slice(0,2))}月{parseInt(selectedDate.slice(3,5))}日!!!
             </h2>
             {memories.length === 0 ? (
-              <p style={{ color: "#888" }}>まだ投稿はありません。</p>
+              <EmptyNote>まだ投稿はありません。</EmptyNote>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {visibleMemories.map((m) => (
@@ -351,12 +409,24 @@ export default function ViewMemoriesByDate() {
                     key={m.id}
                     style={{
                       position: "relative",
-                      background: "rgba(255,255,255,0.8)",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+                      background: "rgba(255,253,244,0.92)",
+                      border: "1px solid rgba(177,139,91,0.18)",
+                      borderRadius: "3px",
+                      padding: "20px 16px 16px",
+                      boxShadow: "3px 4px 0 rgba(137,102,64,0.1)",
                     }}
                   >
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        left: "50%",
+                        width: "62px",
+                        height: "17px",
+                        background: "rgba(244,215,142,0.62)",
+                        transform: "translateX(-50%) rotate(-2deg)",
+                      }}
+                    />
                     <div
                       onClick={() => handleDelete(m)}
                       style={{
@@ -427,7 +497,7 @@ export default function ViewMemoriesByDate() {
           )}
           </>
         ) : (
-          <p style={{ color: "#888" }}>左の日付から選択してください。</p>
+          <EmptyNote>左の日付から選択してください。</EmptyNote>
         )}
       </motion.div>
     </motion.div>

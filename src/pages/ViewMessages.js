@@ -11,8 +11,8 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import html2canvas from "html2canvas";
 import { Trash2 } from "lucide-react"; // ← ゴミ箱アイコン
+import EmptyNote from "../components/EmptyNote";
 
 const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#ffdc4d", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
 const MOBILE_BREAKPOINT = 768;
@@ -110,16 +110,6 @@ export default function ViewMessages() {
     );
   };
 
-  // 🔹 スクショ機能
-  const takeScreenshot = async () => {
-    const element = document.getElementById("message-board");
-    const canvas = await html2canvas(element, { scale: 2 });
-    const link = document.createElement("a");
-    link.download = "寄せ書き.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  };
-
   // 🔹 削除機能
   const handleDelete = async (msg) => {
     const input = prompt("削除用パスワードを入力してください:");
@@ -197,9 +187,6 @@ export default function ViewMessages() {
         <div style={{ display: "flex", gap: "8px", width: "100%" }}>
           <button onClick={() => navigate("/home0")} style={buttonStyle}>
             もくじ
-          </button>
-          <button onClick={takeScreenshot} style={{ ...buttonStyle, background: "#7bafff" }}>
-            スクショ
           </button>
           <input
             type="text"
@@ -345,18 +332,41 @@ export default function ViewMessages() {
         ))}
       </AnimatePresence>
 
+      <p
+        style={{
+          position: "fixed",
+          left: "50%",
+          bottom: "14px",
+          zIndex: 900,
+          margin: 0,
+          padding: "5px 12px",
+          borderRadius: "999px",
+          background: "rgba(255, 253, 246, 0.5)",
+          color: "rgba(109, 89, 70, 0.46)",
+          fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.72rem" : "0.82rem",
+          letterSpacing: "0.05em",
+          textAlign: "center",
+          transform: "translateX(-50%)",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        }}
+      >
+        画面をタップすると付箋を並び替えられます
+      </p>
+
       {messages.length === 0 && (
-        <div
+        <EmptyNote
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            color: "#999",
+            width: "min(88vw, 360px)",
+            margin: 0,
           }}
         >
-          メッセージがまだありません 📮
-        </div>
+          メッセージがまだありません。
+        </EmptyNote>
       )}
     </div>
   );

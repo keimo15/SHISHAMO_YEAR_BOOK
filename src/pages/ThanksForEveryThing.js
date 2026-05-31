@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   collection,
-  documentId,
   getCountFromServer,
   getDocs,
   limit,
@@ -33,11 +32,11 @@ export default function CreditsPage() {
       const membersQuery = cursor
         ? query(
             contributorsRef,
-            orderBy(documentId()),
+            orderBy("createdAt", "asc"),
             startAfter(cursor),
             limit(PAGE_SIZE)
           )
-        : query(contributorsRef, orderBy(documentId()), limit(PAGE_SIZE));
+        : query(contributorsRef, orderBy("createdAt", "asc"), limit(PAGE_SIZE));
       const snapshot = await getDocs(membersQuery);
       const nextMembers = snapshot.docs.map((doc) => ({
           id: doc.id,
