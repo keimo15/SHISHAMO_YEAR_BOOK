@@ -5,7 +5,8 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
   const [hoveredPref, setHoveredPref] = useState(null);
 
   // クリック処理
-  const handleClick = (pref) => {
+  const handleClick = (e, pref) => {
+    e.stopPropagation();
     if (onPrefClick) onPrefClick(pref);     // 親コンポーネントに通知
   };
 
@@ -13,16 +14,16 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
   const getFill = (pref) => {
     const count = prefCounts?.[pref] || 0;
 
-    if (selectedPref === pref) return '#fff'; // 選択中は濃赤
-    if (hoveredPref === pref) return '#fff'; // ホバーは薄赤
+    if (selectedPref === pref) return '#d94f55'; // 選択中は濃赤
+    if (hoveredPref === pref) return '#ffe4da'; // ホバーは薄赤
 
-    if (count === 0) return '#EEEEEE'; // 投稿0件は灰色
+    if (count === 0) return '#eee8df'; // 投稿0件は灰色
 
     // 投稿数が多いほど赤を濃く
-    const intensity = Math.min(count, 100) / 100; // 最大100件でスケール
-    const r = 255;
-    const g = Math.floor(170 * (1 - intensity)); // 170 → 0
-    const b = Math.floor(170 * (1 - intensity)); // 170 → 0
+    const intensity = Math.min(count, 30) / 30; // 最大30件でスケール
+    const r = Math.floor(238 - intensity * 34);
+    const g = Math.floor(166 - intensity * 78);
+    const b = Math.floor(162 - intensity * 70);
     return `rgb(${r},${g},${b})`;
   };
 
@@ -49,7 +50,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
               strokeWidth="1.0"
               transform="translate(52.000000, 193.000000)"
               fill={getFill('沖縄')}
-              onClick={() => handleClick('沖縄')}
+              onClick={(e) => handleClick(e, '沖縄')}
               onMouseEnter={() => setHoveredPref('沖縄')}
               onMouseLeave={() => setHoveredPref(null)}
               style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -74,7 +75,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
               strokeWidth="1.0"
               transform="translate(96, 17)"
               fill={getFill('鹿児島')}
-              onClick={() => handleClick('鹿児島')}
+              onClick={(e) => handleClick(e, '鹿児島')}
               onMouseEnter={() => setHoveredPref('鹿児島')}
               onMouseLeave={() => setHoveredPref(null)}
               style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -105,7 +106,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
               strokeWidth="1.0"
               transform="translate(152, 824)"
               fill={getFill('宮崎')}
-              onClick={() => handleClick('宮崎')}
+              onClick={(e) => handleClick(e, '宮崎')}
               onMouseEnter={() => setHoveredPref('宮崎')}
               onMouseLeave={() => setHoveredPref(null)}
               style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -122,7 +123,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(163,771)"
             fill={getFill('大分')}
-            onClick={() => handleClick('大分')}
+            onClick={(e) => handleClick(e, '大分')}
             onMouseEnter={() => setHoveredPref('大分')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -139,7 +140,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(115,800)"
             fill={getFill('熊本')}
-            onClick={() => handleClick('熊本')}
+            onClick={(e) => handleClick(e, '熊本')}
             onMouseEnter={() => setHoveredPref('熊本')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -156,7 +157,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(44,700)"
             fill={getFill('長崎')}
-            onClick={() => handleClick('長崎')}
+            onClick={(e) => handleClick(e, '長崎')}
             onMouseEnter={() => setHoveredPref('長崎')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -173,7 +174,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(108,773)"
             fill={getFill('佐賀')}
-            onClick={() => handleClick('佐賀')}
+            onClick={(e) => handleClick(e, '佐賀')}
             onMouseEnter={() => setHoveredPref('佐賀')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -190,7 +191,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(123,752)"
             fill={getFill('福岡')}
-            onClick={() => handleClick('福岡')}
+            onClick={(e) => handleClick(e, '福岡')}
             onMouseEnter={() => setHoveredPref('福岡')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -207,7 +208,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("高知")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("高知")}
+            onClick={(e) => handleClick(e, "高知")}
             onMouseEnter={() => setHoveredPref("高知")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -224,7 +225,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("愛媛")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("愛媛")}
+            onClick={(e) => handleClick(e, "愛媛")}
             onMouseEnter={() => setHoveredPref("愛媛")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -241,7 +242,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("香川")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("香川")}
+            onClick={(e) => handleClick(e, "香川")}
             onMouseEnter={() => setHoveredPref("香川")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -258,7 +259,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("徳島")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("徳島")}
+            onClick={(e) => handleClick(e, "徳島")}
             onMouseEnter={() => setHoveredPref("徳島")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -275,7 +276,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(168,710)"
             fill={getFill('山口')}
-            onClick={() => handleClick('山口')}
+            onClick={(e) => handleClick(e, '山口')}
             onMouseEnter={() => setHoveredPref('山口')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -292,7 +293,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(230,687)"
             fill={getFill('広島')}
-            onClick={() => handleClick('広島')}
+            onClick={(e) => handleClick(e, '広島')}
             onMouseEnter={() => setHoveredPref('広島')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -309,7 +310,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(295,673)"
             fill={getFill('岡山')}
-            onClick={() => handleClick('岡山')}
+            onClick={(e) => handleClick(e, '岡山')}
             onMouseEnter={() => setHoveredPref('岡山')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -326,7 +327,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(211,610)"
             fill={getFill('島根')}
-            onClick={() => handleClick('島根')}
+            onClick={(e) => handleClick(e, '島根')}
             onMouseEnter={() => setHoveredPref('島根')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -343,7 +344,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(288,658)"
             fill={getFill('鳥取')}
-            onClick={() => handleClick('鳥取')}
+            onClick={(e) => handleClick(e, '鳥取')}
             onMouseEnter={() => setHoveredPref('鳥取')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -360,7 +361,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("和歌山")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("和歌山")}
+            onClick={(e) => handleClick(e, "和歌山")}
             onMouseEnter={() => setHoveredPref("和歌山")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -377,7 +378,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("奈良")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("奈良")}
+            onClick={(e) => handleClick(e, "奈良")}
             onMouseEnter={() => setHoveredPref("奈良")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -394,7 +395,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("兵庫")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("兵庫")}
+            onClick={(e) => handleClick(e, "兵庫")}
             onMouseEnter={() => setHoveredPref("兵庫")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -411,7 +412,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("大阪")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("大阪")}
+            onClick={(e) => handleClick(e, "大阪")}
             onMouseEnter={() => setHoveredPref("大阪")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -428,7 +429,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("京都")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("京都")}
+            onClick={(e) => handleClick(e, "京都")}
             onMouseEnter={() => setHoveredPref("京都")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -445,7 +446,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             strokeWidth="1.0"
             transform="translate(423,655)"
             fill={getFill('滋賀')}
-            onClick={() => handleClick('滋賀')}
+            onClick={(e) => handleClick(e, '滋賀')}
             onMouseEnter={() => setHoveredPref('滋賀')}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
@@ -462,7 +463,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("三重")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("三重")}
+            onClick={(e) => handleClick(e, "三重")}
             onMouseEnter={() => setHoveredPref("三重")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -479,7 +480,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("愛知")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("愛知")}
+            onClick={(e) => handleClick(e, "愛知")}
             onMouseEnter={() => setHoveredPref("愛知")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -496,7 +497,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("静岡")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("静岡")}
+            onClick={(e) => handleClick(e, "静岡")}
             onMouseEnter={() => setHoveredPref("静岡")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -513,7 +514,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("岐阜")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("岐阜")}
+            onClick={(e) => handleClick(e, "岐阜")}
             onMouseEnter={() => setHoveredPref("岐阜")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -530,7 +531,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("長野")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("長野")}
+            onClick={(e) => handleClick(e, "長野")}
             onMouseEnter={() => setHoveredPref("長野")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -547,7 +548,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("山梨")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("山梨")}
+            onClick={(e) => handleClick(e, "山梨")}
             onMouseEnter={() => setHoveredPref("山梨")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -564,7 +565,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("福井")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("福井")}
+            onClick={(e) => handleClick(e, "福井")}
             onMouseEnter={() => setHoveredPref("福井")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -581,7 +582,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("石川")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("石川")}
+            onClick={(e) => handleClick(e, "石川")}
             onMouseEnter={() => setHoveredPref("石川")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -598,7 +599,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("富山")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("富山")}
+            onClick={(e) => handleClick(e, "富山")}
             onMouseEnter={() => setHoveredPref("富山")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -615,7 +616,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("新潟")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("新潟")}
+            onClick={(e) => handleClick(e, "新潟")}
             onMouseEnter={() => setHoveredPref("新潟")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -632,7 +633,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("神奈川")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("神奈川")}
+            onClick={(e) => handleClick(e, "神奈川")}
             onMouseEnter={() => setHoveredPref("神奈川")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -649,7 +650,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("東京")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("東京")}
+            onClick={(e) => handleClick(e, "東京")}
             onMouseEnter={() => setHoveredPref("東京")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -666,7 +667,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("千葉")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("千葉")}
+            onClick={(e) => handleClick(e, "千葉")}
             onMouseEnter={() => setHoveredPref("千葉")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -683,7 +684,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("埼玉")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("埼玉")}
+            onClick={(e) => handleClick(e, "埼玉")}
             onMouseEnter={() => setHoveredPref("埼玉")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -700,7 +701,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("群馬")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("群馬")}
+            onClick={(e) => handleClick(e, "群馬")}
             onMouseEnter={() => setHoveredPref("群馬")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -717,7 +718,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("栃木")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("栃木")}
+            onClick={(e) => handleClick(e, "栃木")}
             onMouseEnter={() => setHoveredPref("栃木")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -734,7 +735,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("茨城")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("茨城")}
+            onClick={(e) => handleClick(e, "茨城")}
             onMouseEnter={() => setHoveredPref("茨城")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -751,7 +752,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("福島")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("福島")}
+            onClick={(e) => handleClick(e, "福島")}
             onMouseEnter={() => setHoveredPref("福島")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -768,7 +769,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("山形")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("山形")}
+            onClick={(e) => handleClick(e, "山形")}
             onMouseEnter={() => setHoveredPref("山形")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -785,7 +786,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("秋田")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("秋田")}
+            onClick={(e) => handleClick(e, "秋田")}
             onMouseEnter={() => setHoveredPref("秋田")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -802,7 +803,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("宮城")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("宮城")}
+            onClick={(e) => handleClick(e, "宮城")}
             onMouseEnter={() => setHoveredPref("宮城")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -819,7 +820,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("岩手")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("岩手")}
+            onClick={(e) => handleClick(e, "岩手")}
             onMouseEnter={() => setHoveredPref("岩手")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -836,7 +837,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("青森")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("青森")}
+            onClick={(e) => handleClick(e, "青森")}
             onMouseEnter={() => setHoveredPref("青森")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}
@@ -853,7 +854,7 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
             fill={getFill("北海道")}
             stroke="#000"
             strokeWidth="1"
-            onClick={() => handleClick("北海道")}
+            onClick={(e) => handleClick(e, "北海道")}
             onMouseEnter={() => setHoveredPref("北海道")}
             onMouseLeave={() => setHoveredPref(null)}
             style={{ cursor: "pointer", transition: "fill 0.2s" }}

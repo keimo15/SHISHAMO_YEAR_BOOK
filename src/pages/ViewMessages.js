@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import bcrypt from "bcryptjs";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { db } from "../firebase";
 import {
@@ -13,15 +14,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import html2canvas from "html2canvas";
 import { Trash2 } from "lucide-react"; // ← ゴミ箱アイコン
 
+const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#ffdc4d", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
+const MOBILE_BREAKPOINT = 768;
+const getNoteSize = () =>
+  window.innerWidth <= MOBILE_BREAKPOINT
+    ? { width: 150, height: 120 }
+    : { width: 200, height: 150 };
+
 export default function ViewMessages() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState([]);
   const [styledMessages, setStyledMessages] = useState([]);
-  const [deletingId, setDeletingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-
-  const colors = ["#ff7b7b", "#ffa74d", "#ffdc4d", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
+  const [targetFilter, setTargetFilter] = useState("ALL");
 
   // 🔹 Firestoreからメッセージ取得
   useEffect(() => {
@@ -39,24 +45,25 @@ export default function ViewMessages() {
   }, []);
 
   // 🔹 付箋スタイル生成
-  const generateRandomStyles = (msgs) =>
+  const generateRandomStyles = useCallback((msgs) =>
     msgs.map((msg) => {
       const width = window.innerWidth;
       const height = window.innerHeight;
 
-      const noteWidth = 200;  // 付箋の幅
-      const noteHeight = 150; // 高さの目安（文字量に応じて調整可）
+      const { width: noteWidth, height: noteHeight } = getNoteSize();
 
       return {
         ...msg,
         x: Math.random() * (width - noteWidth),
         y: Math.random() * (height - noteHeight),
         rotate: Math.random() * 20 - 10,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        fontSize: `${Math.random() * 0.4 + 1}rem`,
+        color: MESSAGE_COLORS[Math.floor(Math.random() * MESSAGE_COLORS.length)],
+        fontSize: window.innerWidth <= MOBILE_BREAKPOINT
+          ? `${Math.random() * 0.18 + 0.82}rem`
+          : `${Math.random() * 0.4 + 1}rem`,
         zIndex: Math.floor(Math.random() * 50),
       };
-    });
+    }), []);
 
   // 🔹 初期表示＆ハイライト投稿の遅延表示
   useEffect(() => {
@@ -84,15 +91,14 @@ export default function ViewMessages() {
         ]);
       }, 2000);
     }
-  }, [messages]);
+  }, [generateRandomStyles, messages, searchParams]);
 
   // 🔹 背景クリックで再配置（シャッフル）
   const shuffleLayout = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    const noteWidth = 200;
-    const noteHeight = 150;
+    const { width: noteWidth, height: noteHeight } = getNoteSize();
 
     setStyledMessages((prev) =>
       prev.map((msg) => ({
@@ -118,9 +124,13 @@ export default function ViewMessages() {
   const handleDelete = async (msg) => {
     const input = prompt("削除用パスワードを入力してください:");
     if (!input) return;
-    if (input !== msg.password) return alert("パスワードが違います。");
 
-    setDeletingId(msg.id);
+    // ハッシュ照合
+    const isMatch = await bcrypt.compare(input, msg.password);
+    if (!isMatch) {
+      return alert("パスワードが違います。");
+    }
+
     setTimeout(async () => {
       await deleteDoc(doc(db, "messages", msg.id));
       setStyledMessages((prev) => prev.filter((m) => m.id !== msg.id));
@@ -129,12 +139,26 @@ export default function ViewMessages() {
   };
 
   // 🔹 検索
-  const filteredMessages = styledMessages.filter(
-    (m) =>
+  const filteredMessages = styledMessages.filter((m) => {
+    if (
+      targetFilter !== "ALL" &&
+      m.target !== targetFilter
+    ) {
+      return false;
+    }
+
+    if (!searchTerm) return true;
+
+    return (
       m.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.name && m.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (m.sns && m.sns.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+      (m.name &&
+        m.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (m.sns &&
+        m.sns.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (m.target &&
+        m.target.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  });
 
   return (
     <div
@@ -163,30 +187,67 @@ export default function ViewMessages() {
           position: "fixed",
           top: 10,
           left: 10,
+          right: 10,
           display: "flex",
+          flexWrap: "wrap",
           gap: "10px",
           zIndex: 1000,
         }}
       >
-        <button onClick={() => navigate("/home")} style={buttonStyle}>
-          ← ホーム
-        </button>
-        <button onClick={takeScreenshot} style={{ ...buttonStyle, background: "#7bafff" }}>
-          📸 スクショ
-        </button>
-        <input
-          type="text"
-          placeholder="🔍 検索（名前・SNS・内容）"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+        <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+          <button onClick={() => navigate("/home0")} style={buttonStyle}>
+            もくじ
+          </button>
+          <button onClick={takeScreenshot} style={{ ...buttonStyle, background: "#7bafff" }}>
+            スクショ
+          </button>
+          <input
+            type="text"
+            placeholder="🔍 検索（名前・SNS・内容）"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              minWidth: 0,
+              flex: 1,
+              padding: "8px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              fontFamily: "'Yomogi', cursive",
+            }}
+          />
+        </div>
+
+        <div
           style={{
-            padding: "8px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-            fontFamily: "'Yomogi', cursive",
-            width: "200px",
+            display: "flex",
+            width: "100%",
+            gap: "6px",
+            overflowX: "auto",
+            paddingBottom: "4px",
           }}
-        />
+        >
+          {[
+            "ALL",
+            "SHISHAMO",
+            "宮崎朝子",
+            "松岡彩",
+            "吉川美沙貴",
+            "その他",
+          ].map((target) => (
+            <button
+              key={target}
+              onClick={() => setTargetFilter(target)}
+              style={{
+                ...buttonStyle,
+                flexShrink: 0,
+                opacity: targetFilter === target ? 1 : 0.5,
+              }}
+            >
+              {target}
+            </button>
+          ))}
+        </div>
+
       </div>
 
       {/* 🔸 付箋の表示 */}
@@ -217,17 +278,32 @@ export default function ViewMessages() {
               transform: "translate(-50%, -50%)",
               background: "rgba(255,255,255,0.8)",
               color: msg.color,
-              padding: "10px 14px",
+              padding: window.innerWidth <= MOBILE_BREAKPOINT ? "8px 10px" : "10px 14px",
               borderRadius: "12px",
               boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
               textAlign: "center",
-              width: "200px",
+              width: window.innerWidth <= MOBILE_BREAKPOINT ? "150px" : "200px",
               fontWeight: "600",
               lineHeight: "1.5",
               zIndex: msg.zIndex || 1,
               userSelect: "none",
             }}
           >
+            <div
+              style={{
+                position: "absolute",
+                top: window.innerWidth <= MOBILE_BREAKPOINT ? "-7px" : "-9px",
+                left: "50%",
+                width: window.innerWidth <= MOBILE_BREAKPOINT ? "48px" : "62px",
+                height: window.innerWidth <= MOBILE_BREAKPOINT ? "14px" : "17px",
+                borderRadius: "2px",
+                background: "rgba(255, 232, 153, 0.68)",
+                boxShadow: "0 1px 2px rgba(125, 90, 47, 0.1)",
+                transform: "translateX(-50%) rotate(-3deg)",
+                pointerEvents: "none",
+              }}
+            />
+
             {/* 🗑️ ゴミ箱アイコン */}
             <div
               onClick={(e) => {
@@ -248,12 +324,22 @@ export default function ViewMessages() {
             <p style={{ margin: "0 0 6px 0" }}>{msg.text}</p>
             <p
               style={{
-                fontSize: "0.85rem",
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.7rem" : "0.8rem",
                 color: "#444",
+                // marginBottom: "4px",
+              }}
+            >
+              to {msg.target || "SHISHAMO"}
+            </p>
+
+            <p
+              style={{
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.72rem" : "0.85rem",
+                color: "#555",
                 whiteSpace: "nowrap",
               }}
             >
-              - {msg.name || "匿名のしゃもサポ"} {msg.sns && `(${msg.sns})`}
+              {msg.name || "匿名のしゃもサポ"} {msg.sns && `@${msg.sns}`}
             </p>
           </motion.div>
         ))}
@@ -283,6 +369,8 @@ const buttonStyle = {
   borderRadius: "8px",
   padding: "8px 12px",
   cursor: "pointer",
+  flexShrink: 0,
+  whiteSpace: "nowrap",
   boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
   fontWeight: "bold",
   fontFamily: "'Yomogi', cursive",

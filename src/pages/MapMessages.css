@@ -1,15 +1,261 @@
-/* src/pages/MapMessages.css */
+.map-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.7), transparent 24%),
+    repeating-linear-gradient(0deg, rgba(177, 142, 96, 0.045) 0 1px, transparent 1px 24px),
+    #f5ead5;
+  color: #604b3b;
+  font-family: "Yomogi", cursive;
+}
 
-/* .japan-map-svg path {
-  fill: #cccccc;
-  transition: fill 0.2s;
+.map-toolbar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.map-filters {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(159, 115, 76, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 253, 246, 0.9);
+  box-shadow: 0 3px 8px rgba(120, 83, 48, 0.12);
+}
+
+.map-filter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #8b7563;
   cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: bold;
 }
 
-.japan-map-svg path:hover {
-  fill: #ffaaaa;
+.map-filter.is-active {
+  color: #614b3b;
+  background: #f6ead3;
 }
 
-.japan-map-svg path.selected {
-  fill: #fff;
-} */
+.map-filter input {
+  display: none;
+}
+
+.map-filter-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  opacity: 0.32;
+}
+
+.map-filter.is-active .map-filter-dot {
+  opacity: 1;
+}
+
+.map-filter-dot.memory {
+  background: #8abfe8;
+}
+
+.map-filter-dot.seichi {
+  background: #e9bd4d;
+}
+
+.map-stage {
+  box-sizing: border-box;
+  padding: 76px 26% 30px 24px;
+}
+
+.map-paper {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 30px 24px 16px;
+  border: 1px solid rgba(174, 139, 91, 0.28);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 25px, rgba(130, 170, 190, 0.08) 25px 26px),
+    #fffdf4;
+  box-shadow: 5px 7px 0 rgba(145, 105, 64, 0.14), 0 12px 28px rgba(105, 75, 45, 0.16);
+}
+
+.map-tape,
+.map-panel-tape {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 100px;
+  height: 28px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgba(244, 215, 142, 0.62);
+  box-shadow: 0 1px 2px rgba(125, 90, 47, 0.1);
+}
+
+.map-heading {
+  text-align: center;
+}
+
+.map-kicker,
+.map-panel-kicker {
+  margin: 0;
+  color: #c66a68;
+  font-family: sans-serif;
+  font-size: 0.62rem;
+  font-weight: bold;
+  letter-spacing: 0.22em;
+}
+
+.map-heading h1 {
+  margin: 5px 0 2px;
+  color: #d66565;
+  font-size: clamp(1.55rem, 4vw, 2.3rem);
+}
+
+.map-heading p:last-child {
+  margin: 0;
+  color: #8b7563;
+  font-size: 0.88rem;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px 14px;
+  padding-top: 4px;
+  color: #806a57;
+  font-size: 0.74rem;
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(109, 86, 64, 0.2);
+  border-radius: 3px;
+}
+
+.legend-swatch.empty {
+  background: #eee8df;
+}
+
+.legend-swatch.posted {
+  background: #e88b88;
+}
+
+.map-memory-panel {
+  position: absolute;
+  top: 6%;
+  right: 2%;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 23%;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 26px 14px 14px;
+  border: 1px solid rgba(179, 140, 90, 0.26);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 24px, rgba(130, 170, 190, 0.1) 24px 25px),
+    #fffdf4;
+  box-shadow: 5px 7px 0 rgba(145, 105, 64, 0.13), 0 8px 22px rgba(93, 66, 41, 0.18);
+}
+
+.map-panel-tape {
+  width: 76px;
+  height: 22px;
+}
+
+.map-panel-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  color: #a88d76;
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+
+.map-memory-panel h3 {
+  margin: 5px 0 0;
+  color: #d66565;
+  font-size: 1.25rem;
+}
+
+.map-panel-count {
+  margin: 1px 0 14px;
+  color: #a88d76;
+  font-size: 0.75rem;
+}
+
+.map-empty-message {
+  color: #9c8c7e;
+}
+
+.map-memory-card {
+  position: relative;
+  margin-bottom: 10px;
+  padding: 9px 26px 9px 9px;
+  border: 1px solid rgba(177, 139, 91, 0.14);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 1px 2px 0 rgba(137, 102, 64, 0.08);
+}
+
+.map-more-button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  background: #e46c6c;
+  color: #fff;
+  cursor: pointer;
+  font-family: "Yomogi", cursive;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .map-page {
+    overflow: visible;
+  }
+
+  .map-toolbar {
+    right: 10px;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .map-stage {
+    padding: 80px 10px 6px;
+  }
+
+  .map-paper {
+    padding: 26px 8px 10px;
+  }
+
+  .map-heading p:last-child {
+    font-size: 0.76rem;
+  }
+
+  .map-memory-panel {
+    position: relative;
+    width: calc(100% - 20px);
+    max-height: none;
+    margin: 22px auto 30px;
+  }
+}
