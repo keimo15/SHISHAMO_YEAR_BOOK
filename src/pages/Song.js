@@ -130,11 +130,13 @@ export default function SongsPage() {
 
   // 🔸 曲選択時の投稿
   const filteredPosts = useMemo(() => {
-    const sorted = [...posts];
+    const getCreatedAt = (post) => post.createdAt?.toMillis?.() || 0;
 
-    return sortOrder === "new"
-      ? sorted.reverse()
-      : sorted;
+    return [...posts].sort((a, b) =>
+      sortOrder === "new"
+        ? getCreatedAt(b) - getCreatedAt(a)
+        : getCreatedAt(a) - getCreatedAt(b)
+    );
   }, [posts, sortOrder]);
 
   const visiblePosts = filteredPosts.slice(0, visibleCount);

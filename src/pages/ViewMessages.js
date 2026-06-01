@@ -7,19 +7,95 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  limit,
   query,
   orderBy,
+  startAfter,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2 } from "lucide-react"; // ← ゴミ箱アイコン
 import EmptyNote from "../components/EmptyNote";
 
-const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#ffdc4d", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
+const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#c99500", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
 const MOBILE_BREAKPOINT = 768;
-const getNoteSize = () =>
+const PAGE_SIZE = 20;
+const getNoteSize = (text = "") => {
+  const isLong = text.trim().length >= 90;
+
+  if (window.innerWidth <= MOBILE_BREAKPOINT) {
+    return {
+      width: isLong ? 164 : 114,
+      height: isLong ? 72 : 76,
+    };
+  }
+
+  return { width: isLong ? 560 : 300, height: 150 };
+};
+const getBoardSize = () =>
   window.innerWidth <= MOBILE_BREAKPOINT
-    ? { width: 150, height: 120 }
-    : { width: 200, height: 150 };
+    ? {
+        width: window.innerWidth,
+        height: 1700,
+      }
+    : {
+        width: Math.max(window.innerWidth, 1200),
+        height: Math.max(window.innerHeight, 4500),
+      };
+const shuffle = (items) => [...items].sort(() => Math.random() - 0.5);
+const getLooseGridStyles = (messages) => {
+  const { width, height } = getBoardSize();
+  const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+  const columns = 4;
+  const sidePadding = isMobile ? 8 : 64;
+  const topPadding = isMobile ? 190 : 180;
+  const rowHeight = isMobile ? 130 : 390;
+  const columnWidth = (width - sidePadding * 2) / columns;
+  const horizontalOffset = isMobile ? -54 : -78;
+  const longMessages = shuffle(
+    messages.filter((msg) => msg.text.trim().length >= 90)
+  );
+  const shortMessages = shuffle(
+    messages.filter((msg) => msg.text.trim().length < 90)
+  );
+  const placements = [];
+  const placementCountByColumn = [0, 0, 0, 0];
+
+  longMessages.forEach((msg) => {
+    const placementColumn =
+      placementCountByColumn[1] <= placementCountByColumn[2] ? 1 : 2;
+    placements.push({ msg, placementColumn });
+    placementCountByColumn[placementColumn] += 1;
+  });
+
+  shortMessages.forEach((msg) => {
+    const placementColumn =
+      placementCountByColumn[0] <= placementCountByColumn[3] ? 0 : 3;
+    placements.push({ msg, placementColumn });
+    placementCountByColumn[placementColumn] += 1;
+  });
+
+  const nextRowByColumn = [0, 0, 0, 0];
+  const compactPlacements = placements.map(({ msg, placementColumn }) => {
+    const placementRow = nextRowByColumn[placementColumn];
+    nextRowByColumn[placementColumn] += 1;
+
+    return { msg, placementRow, placementColumn };
+  });
+
+  return compactPlacements.map(({ msg, placementRow, placementColumn }) => {
+    const baseX =
+      sidePadding + columnWidth * (placementColumn + 0.5) + horizontalOffset;
+    const baseY = topPadding + rowHeight * placementRow;
+
+    return {
+      ...msg,
+      x: baseX + (Math.random() * (isMobile ? 8 : 18) - (isMobile ? 4 : 9)),
+      y: Math.min(baseY + (Math.random() * 18 - 9), height - 360),
+      rotate: Math.random() * (isMobile ? 5 : 8) - (isMobile ? 2.5 : 4),
+      zIndex: Math.floor(Math.random() * 50),
+    };
+  });
+};
 
 export default function ViewMessages() {
   const navigate = useNavigate();
@@ -28,46 +104,168 @@ export default function ViewMessages() {
   const [styledMessages, setStyledMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [targetFilter, setTargetFilter] = useState("ALL");
+  const [messagePages, setMessagePages] = useState([]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [hasOlderMessages, setHasOlderMessages] = useState(true);
+  const [loadingPage, setLoadingPage] = useState(false);
 
-  // 🔹 Firestoreからメッセージ取得
+  // 🔹 Firestoreから最新20件を取得
   useEffect(() => {
     const fetchMessages = async () => {
+      setLoadingPage(true);
       try {
-        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
+        const q = query(
+          collection(db, "messages"),
+          orderBy("createdAt", "desc"),
+          limit(PAGE_SIZE)
+        );
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
         setMessages(data);
+        setMessagePages([{ messages: data, lastDoc: snapshot.docs.at(-1) || null }]);
+        setHasOlderMessages(snapshot.docs.length === PAGE_SIZE);
       } catch (err) {
         console.error("Error fetching messages:", err);
+      } finally {
+        setLoadingPage(false);
       }
     };
     fetchMessages();
   }, []);
 
+  const showOlderMessages = async () => {
+    const cachedPage = messagePages[pageIndex + 1];
+    if (cachedPage) {
+      setPageIndex((current) => current + 1);
+      setMessages(cachedPage.messages);
+      return;
+    }
+
+    const lastDoc = messagePages[pageIndex]?.lastDoc;
+    if (!lastDoc || loadingPage || !hasOlderMessages) return;
+
+    setLoadingPage(true);
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, "messages"),
+          orderBy("createdAt", "desc"),
+          startAfter(lastDoc),
+          limit(PAGE_SIZE)
+        )
+      );
+      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      if (data.length === 0) {
+        setHasOlderMessages(false);
+        return;
+      }
+
+      setMessagePages((pages) => [
+        ...pages,
+        { messages: data, lastDoc: snapshot.docs.at(-1) || null },
+      ]);
+      setPageIndex((current) => current + 1);
+      setMessages(data);
+      setHasOlderMessages(snapshot.docs.length === PAGE_SIZE);
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+    } finally {
+      setLoadingPage(false);
+    }
+  };
+
+  const showNewerMessages = () => {
+    if (pageIndex <= 0) return;
+
+    const nextIndex = pageIndex - 1;
+    setPageIndex(nextIndex);
+    setMessages(messagePages[nextIndex].messages);
+    setHasOlderMessages(true);
+  };
+
+  useEffect(() => {
+    if (messagePages.length === 0) return;
+
+    if (targetFilter === "ALL") {
+      setMessages(messagePages[pageIndex]?.messages || []);
+      return;
+    }
+
+    const matchingMessages = messagePages
+      .flatMap((page) => page.messages)
+      .filter((msg) => msg.target === targetFilter)
+      .slice(0, PAGE_SIZE);
+    setMessages(matchingMessages);
+  }, [messagePages, pageIndex, targetFilter]);
+
+  useEffect(() => {
+    if (
+      targetFilter === "ALL" ||
+      messagePages.length === 0 ||
+      loadingPage ||
+      !hasOlderMessages
+    ) {
+      return;
+    }
+
+    const matchingCount = messagePages
+      .flatMap((page) => page.messages)
+      .filter((msg) => msg.target === targetFilter).length;
+    if (matchingCount >= PAGE_SIZE) return;
+
+    const fetchMoreFilteredMessages = async () => {
+      const lastDoc = messagePages.at(-1)?.lastDoc;
+      if (!lastDoc) return;
+
+      setLoadingPage(true);
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(db, "messages"),
+            orderBy("createdAt", "desc"),
+            startAfter(lastDoc),
+            limit(PAGE_SIZE)
+          )
+        );
+        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        if (data.length === 0) {
+          setHasOlderMessages(false);
+          return;
+        }
+
+        setMessagePages((pages) => [
+          ...pages,
+          { messages: data, lastDoc: snapshot.docs.at(-1) || null },
+        ]);
+        setHasOlderMessages(snapshot.docs.length === PAGE_SIZE);
+      } catch (err) {
+        console.error("Error fetching filtered messages:", err);
+      } finally {
+        setLoadingPage(false);
+      }
+    };
+
+    fetchMoreFilteredMessages();
+  }, [hasOlderMessages, loadingPage, messagePages, targetFilter]);
+
   // 🔹 付箋スタイル生成
   const generateRandomStyles = useCallback((msgs) =>
-    msgs.map((msg) => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-
-      const { width: noteWidth, height: noteHeight } = getNoteSize();
-
-      return {
+    getLooseGridStyles(msgs).map((msg) => ({
         ...msg,
-        x: Math.random() * (width - noteWidth),
-        y: Math.random() * (height - noteHeight),
-        rotate: Math.random() * 20 - 10,
         color: MESSAGE_COLORS[Math.floor(Math.random() * MESSAGE_COLORS.length)],
         fontSize: window.innerWidth <= MOBILE_BREAKPOINT
-          ? `${Math.random() * 0.18 + 0.82}rem`
+          ? `${Math.random() * 0.04 + 0.38}rem`
           : `${Math.random() * 0.4 + 1}rem`,
-        zIndex: Math.floor(Math.random() * 50),
-      };
-    }), []);
+      })), []);
 
   // 🔹 初期表示＆ハイライト投稿の遅延表示
   useEffect(() => {
-    if (messages.length === 0) return;
+    if (messages.length === 0) {
+      setStyledMessages([]);
+      return;
+    }
     const highlightId = searchParams.get("highlight");
     const others = messages.filter((m) => m.id !== highlightId);
     const latest = messages.find((m) => m.id === highlightId);
@@ -81,11 +279,11 @@ export default function ViewMessages() {
           ...prev,
           {
             ...latest,
-            x: 50,
-            y: 50,
-            rotate: Math.random() * 6 - 3,
+            x: getBoardSize().width / 2,
+            y: window.innerWidth <= MOBILE_BREAKPOINT ? 190 : 120,
+            rotate: window.innerWidth <= MOBILE_BREAKPOINT ? 0 : Math.random() * 6 - 3,
             color: "#ff7b7b",
-            fontSize: "1.2rem",
+            fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.46rem" : "1.2rem",
             zIndex: 999,
           },
         ]);
@@ -95,19 +293,18 @@ export default function ViewMessages() {
 
   // 🔹 背景クリックで再配置（シャッフル）
   const shuffleLayout = () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    setStyledMessages((prev) => getLooseGridStyles(prev));
+  };
+  const bringToFront = (messageId) => {
+    setStyledMessages((prev) => {
+      const highestZIndex = Math.max(0, ...prev.map((msg) => msg.zIndex || 0));
 
-    const { width: noteWidth, height: noteHeight } = getNoteSize();
-
-    setStyledMessages((prev) =>
-      prev.map((msg) => ({
-        ...msg,
-        x: Math.random() * (width - noteWidth),
-        y: Math.random() * (height - noteHeight),
-        rotate: Math.random() * 20 - 10,
-      }))
-    );
+      return prev.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, zIndex: highestZIndex + 1 }
+          : msg
+      );
+    });
   };
 
   // 🔹 削除機能
@@ -123,6 +320,13 @@ export default function ViewMessages() {
 
     setTimeout(async () => {
       await deleteDoc(doc(db, "messages", msg.id));
+      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      setMessagePages((pages) =>
+        pages.map((page) => ({
+          ...page,
+          messages: page.messages.filter((m) => m.id !== msg.id),
+        }))
+      );
       setStyledMessages((prev) => prev.filter((m) => m.id !== msg.id));
       alert("メッセージを削除しました。");
     }, 1000);
@@ -149,6 +353,24 @@ export default function ViewMessages() {
         m.target.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
+  const boardSize = getBoardSize();
+  const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+  const returnToContents = () => {
+    window.scrollTo({ top: 0, left: 0 });
+    navigate("/home0");
+  };
+
+  useEffect(() => {
+    const originalBackground = document.body.style.background;
+    const originalOverflowX = document.body.style.overflowX;
+    document.body.style.background = "#f5ead5";
+    document.body.style.overflowX = "hidden";
+
+    return () => {
+      document.body.style.background = originalBackground;
+      document.body.style.overflowX = originalOverflowX;
+    };
+  }, []);
 
   return (
     <div
@@ -165,9 +387,13 @@ export default function ViewMessages() {
       }}
       style={{
         position: "relative",
+        width: `${boardSize.width}px`,
         minHeight: "100vh",
-        background: "#fffef6",
-        overflow: "hidden",
+        height: `${boardSize.height}px`,
+        background:
+          "repeating-linear-gradient(0deg, rgba(177,142,96,0.045) 0 1px, transparent 1px 24px), #f5ead5",
+        overflowX: "hidden",
+        overflowY: window.innerWidth <= MOBILE_BREAKPOINT ? "visible" : "hidden",
         fontFamily: "'Yomogi', cursive",
       }}
     >
@@ -185,7 +411,7 @@ export default function ViewMessages() {
         }}
       >
         <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-          <button onClick={() => navigate("/home0")} style={buttonStyle}>
+          <button onClick={returnToContents} style={buttonStyle}>
             もくじ
           </button>
           <input
@@ -235,13 +461,58 @@ export default function ViewMessages() {
           ))}
         </div>
 
+        {targetFilter === "ALL" && (
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              justifyContent: "center",
+              gap: "8px",
+            }}
+          >
+            {pageIndex > 0 && (
+              <button
+                type="button"
+                onClick={showNewerMessages}
+                disabled={loadingPage}
+                style={{ ...buttonStyle, background: "#7fa6c8" }}
+              >
+                新しい付箋を見る
+              </button>
+            )}
+            {hasOlderMessages && (
+              <button
+                type="button"
+                onClick={showOlderMessages}
+                disabled={loadingPage}
+                style={{ ...buttonStyle, background: "#d6a94f" }}
+              >
+                {loadingPage ? "読み込み中..." : "古い付箋を見る"}
+              </button>
+            )}
+          </div>
+        )}
+
       </div>
 
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: `${boardSize.width}px`,
+          height: `${boardSize.height}px`,
+        }}
+      >
       {/* 🔸 付箋の表示 */}
       <AnimatePresence>
         {filteredMessages.map((msg, i) => (
           <motion.div
             key={msg.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              bringToFront(msg.id);
+            }}
             initial={{ y: -200, opacity: 0, rotate: msg.rotate - 20, scale: 0.8 }}
             animate={{
               x: msg.x,
@@ -263,13 +534,14 @@ export default function ViewMessages() {
               top: 0,
               left: 0,
               transform: "translate(-50%, -50%)",
-              background: "rgba(255,255,255,0.8)",
+              background: "rgba(255,255,255,0.96)",
               color: msg.color,
-              padding: window.innerWidth <= MOBILE_BREAKPOINT ? "8px 10px" : "10px 14px",
+              padding: window.innerWidth <= MOBILE_BREAKPOINT ? "5px 6px" : "10px 14px",
+              boxSizing: "border-box",
               borderRadius: "12px",
               boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
               textAlign: "center",
-              width: window.innerWidth <= MOBILE_BREAKPOINT ? "150px" : "200px",
+              width: `${getNoteSize(msg.text).width}px`,
               fontWeight: "600",
               lineHeight: "1.5",
               zIndex: msg.zIndex || 1,
@@ -279,10 +551,10 @@ export default function ViewMessages() {
             <div
               style={{
                 position: "absolute",
-                top: window.innerWidth <= MOBILE_BREAKPOINT ? "-7px" : "-9px",
+                top: window.innerWidth <= MOBILE_BREAKPOINT ? "-5px" : "-9px",
                 left: "50%",
-                width: window.innerWidth <= MOBILE_BREAKPOINT ? "48px" : "62px",
-                height: window.innerWidth <= MOBILE_BREAKPOINT ? "14px" : "17px",
+                width: window.innerWidth <= MOBILE_BREAKPOINT ? "30px" : "62px",
+                height: window.innerWidth <= MOBILE_BREAKPOINT ? "9px" : "17px",
                 borderRadius: "2px",
                 background: "rgba(255, 232, 153, 0.68)",
                 boxShadow: "0 1px 2px rgba(125, 90, 47, 0.1)",
@@ -299,19 +571,27 @@ export default function ViewMessages() {
               }}
               style={{
                 position: "absolute",
-                top: 6,
-                right: 6,
+                top: window.innerWidth <= MOBILE_BREAKPOINT ? 3 : 6,
+                right: window.innerWidth <= MOBILE_BREAKPOINT ? 3 : 6,
                 cursor: "pointer",
                 opacity: 0.7,
               }}
             >
-              <Trash2 size={18} />
+              <Trash2 size={window.innerWidth <= MOBILE_BREAKPOINT ? 11 : 18} />
             </div>
 
-            <p style={{ margin: "0 0 6px 0" }}>{msg.text}</p>
             <p
               style={{
-                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.7rem" : "0.8rem",
+                margin: "0 0 6px 0",
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.4rem" : msg.fontSize,
+                fontWeight: "800",
+              }}
+            >
+              {msg.text}
+            </p>
+            <p
+              style={{
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.36rem" : "0.8rem",
                 color: "#444",
                 // marginBottom: "4px",
               }}
@@ -321,7 +601,7 @@ export default function ViewMessages() {
 
             <p
               style={{
-                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.72rem" : "0.85rem",
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.36rem" : "0.85rem",
                 color: "#555",
                 whiteSpace: "nowrap",
               }}
@@ -331,6 +611,7 @@ export default function ViewMessages() {
           </motion.div>
         ))}
       </AnimatePresence>
+      </div>
 
       <p
         style={{
@@ -339,19 +620,25 @@ export default function ViewMessages() {
           bottom: "14px",
           zIndex: 900,
           margin: 0,
-          padding: "5px 12px",
-          borderRadius: "999px",
-          background: "rgba(255, 253, 246, 0.5)",
-          color: "rgba(109, 89, 70, 0.46)",
-          fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.72rem" : "0.82rem",
+          padding: isMobile ? "8px 14px" : "7px 16px",
+          border: "1px solid rgba(177, 139, 91, 0.2)",
+          borderRadius: "8px",
+          background: "rgba(255, 253, 246, 0.9)",
+          boxShadow: "2px 3px 0 rgba(137, 102, 64, 0.1)",
+          color: "rgba(109, 89, 70, 0.82)",
+          fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.76rem" : "0.84rem",
+          fontWeight: "bold",
           letterSpacing: "0.05em",
           textAlign: "center",
+          lineHeight: 1.65,
           transform: "translateX(-50%)",
-          whiteSpace: "nowrap",
+          width: isMobile ? "min(86vw, 340px)" : "auto",
+          whiteSpace: isMobile ? "normal" : "nowrap",
           pointerEvents: "none",
         }}
       >
-        画面をタップすると付箋を並び替えられます
+        <span style={{ display: "block" }}>スワイプして付箋を見てまわれます</span>
+        <span style={{ display: "block" }}>画面をタップすると並び替えられます</span>
       </p>
 
       {messages.length === 0 && (

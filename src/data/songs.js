@@ -202,6 +202,7 @@ export const albums = [
     color: "rgb(194, 135, 233)",
     songs: [
       { title: "URAWA-City / SAKEROCK", ruby: "うらわしてぃ" },
+      { title: "真夏の果実 / 宮崎朝子", ruby: "まなつのかじつ" },
       { title: "東の窓 / The ピーズ", ruby: "ひがしのまど" },
       { title: "列伝永遠に", ruby: "れつでんとわに" },
       { title: "全力少年 / SHISHAMO", ruby: "ぜんりょくしょうねん" },

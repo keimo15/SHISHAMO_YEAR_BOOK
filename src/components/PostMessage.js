@@ -94,12 +94,14 @@ export default function PostForms({ onBack }) {
   const [publicationConsent, setPublicationConsent] = useState(false);
   const [printConsent, setPrintConsent] = useState(false);
   const [profileConsent, setProfileConsent] = useState(false);
+  const [moderationConsent, setModerationConsent] = useState(false);
   const consentResolverRef = useRef(null);
   const handleSubmitted = (post) => setCompletedPost(post);
   const requestConsent = () => {
     setPublicationConsent(false);
     setPrintConsent(false);
     setProfileConsent(false);
+    setModerationConsent(false);
     setConsentDialogOpen(true);
 
     return new Promise((resolve) => {
@@ -107,7 +109,12 @@ export default function PostForms({ onBack }) {
     });
   };
   const closeConsentDialog = (accepted) => {
-    if (accepted && (!publicationConsent || !printConsent || !profileConsent)) return;
+    if (
+      accepted &&
+      (!publicationConsent || !printConsent || !profileConsent || !moderationConsent)
+    ) {
+      return;
+    }
 
     setConsentDialogOpen(false);
     consentResolverRef.current?.(accepted);
@@ -124,9 +131,9 @@ export default function PostForms({ onBack }) {
   };
   const forms = [
     { component: <MessageForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "✉", title: "SHISHAMO へ", note: "メッセージ" },
+    { component: <FavoriteSongForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "♪", title: "みんなのうた", note: "好きな曲" },
     { component: <MemoryForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "⌖", title: "マップ", note: "場所の思い出" },
     { component: <MemoryDateForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "▣", title: "カレンダー", note: "日付の思い出" },
-    { component: <FavoriteSongForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "♪", title: "みんなのうた", note: "好きな曲" },
   ];
 
   return (
@@ -293,15 +300,23 @@ export default function PostForms({ onBack }) {
               />
               <span>ニックネーム・SNSアカウント（入力した場合）を掲載することに同意します</span>
             </label>
+            <label style={consentLabelStyle}>
+              <input
+                type="checkbox"
+                checked={moderationConsent}
+                onChange={(e) => setModerationConsent(e.target.checked)}
+              />
+              <span>SHISHAMOとは無関係である投稿や誹謗中傷等の悪質なものは、管理人が強制的に投稿を削除する可能性がございます。</span>
+            </label>
             <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
               <button
                 type="button"
                 onClick={() => closeConsentDialog(true)}
-                disabled={!publicationConsent || !printConsent || !profileConsent}
+                disabled={!publicationConsent || !printConsent || !profileConsent || !moderationConsent}
                 style={{
                   ...buttonStyle,
-                  background: publicationConsent && printConsent && profileConsent ? "#e46c6c" : "#c9c2b7",
-                  cursor: publicationConsent && printConsent && profileConsent ? "pointer" : "not-allowed",
+                  background: publicationConsent && printConsent && profileConsent && moderationConsent ? "#e46c6c" : "#c9c2b7",
+                  cursor: publicationConsent && printConsent && profileConsent && moderationConsent ? "pointer" : "not-allowed",
                 }}
               >
                 同意して投稿する
@@ -611,7 +626,7 @@ function MemoryForm({ onSubmitted, requestConsent }) {
       </select>
 
       <input
-        placeholder="住所（任意）"
+        placeholder="思い出 / 聖地 の住所（任意）"
         maxLength={100}
         value={address}
         onChange={(e) => setAddress(e.target.value)}
