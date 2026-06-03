@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://keimo15.github.io/SHISHAMO_YEAR_BOOK/sitemap.xml
+Sitemap: https://keimo15.github.io/SHISHAMO_YEAR_BOOK/sitemap.txt
