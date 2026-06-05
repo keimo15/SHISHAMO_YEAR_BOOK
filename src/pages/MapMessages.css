@@ -15,8 +15,11 @@
   position: fixed;
   top: 10px;
   left: 10px;
+  right: 10px;
   display: flex;
   gap: 10px;
+  box-sizing: border-box;
+  padding-right: 96px;
   z-index: 1000;
 }
 
@@ -154,8 +157,20 @@
   background: #eee8df;
 }
 
-.legend-swatch.posted {
-  background: #e88b88;
+.legend-swatch.count-1 {
+  background: #f7beb6;
+}
+
+.legend-swatch.count-2 {
+  background: #ee8d82;
+}
+
+.legend-swatch.count-4 {
+  background: #df5f61;
+}
+
+.legend-swatch.count-8 {
+  background: #c8424c;
 }
 
 .map-memory-panel {
@@ -211,7 +226,7 @@
 .map-memory-card {
   position: relative;
   margin-bottom: 10px;
-  padding: 9px 26px 9px 9px;
+  padding: 30px 36px 38px 9px;
   border: 1px solid rgba(177, 139, 91, 0.14);
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.86);

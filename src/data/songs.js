@@ -3,6 +3,8 @@ export const albums = [
   {
     name: "卒業制作",
     color: "rgb(172, 172, 172)",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/sotsugyoseisaku/689946202",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/13KdpZlGfKX9ty5sBDrBFY?utm_source=generator",
     songs: [
       { title: "宿題が終わらない", ruby: "しゅくだいがおわらない" },
       { title: "お菓子作り", ruby: "おかしづくり" },
@@ -18,6 +20,8 @@ export const albums = [
   {
     name: "SHISHAMO",
     color: "#f0b0b0ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo/735812853",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/1KmhkEt26Vpq3XhTBfDgpH?utm_source=generator",
     songs: [
       { title: "僕に彼女ができたんだ", ruby: "ぼくにかのじょができたんだ" },
       { title: "行きたくない", ruby: "いきたくない" },
@@ -36,6 +40,8 @@ export const albums = [
   {
     name: "SHISHAMO 2",
     color: "#92bbf0ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-2/968617937",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/7y0PYPKY4QFzM7zbsWkQzg?utm_source=generator",
     songs: [
       { title: "僕、実は", ruby: "ぼくじつは" },
       { title: "きみと話せないのは", ruby: "きみとはなせないのは" },
@@ -54,6 +60,8 @@ export const albums = [
   {
     name: "SHISHAMO 3",
     color: "#fae9a3ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-3/1082241150",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/6yHzekJ5x3eD0RTiOFgrXc?utm_source=generator",
     songs: [
       { title: "ごめんね、恋心", ruby: "ごめんねこいごころ" },
       { title: "中庭の少女たち", ruby: "なかにわのしょうじょたち" },
@@ -72,6 +80,8 @@ export const albums = [
   {
     name: "SHISHAMO 4",
     color: "#f791b0ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-4/1428786940",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/4VTW1hXoAKX27j4PZSOzuh?utm_source=generator",
     songs: [
       { title: "好き好き!", ruby: "すきすき" },
       { title: "すれちがいのデート", ruby: "すれちがいのでーと" },
@@ -90,6 +100,8 @@ export const albums = [
   {
     name: "SHISHAMO 5",
     color: "#f51b1bff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-5/1388407711",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/3Edm7S5V6xTJTOBfgxpB3n?utm_source=generator",
     songs: [
       { title: "ねぇ、", ruby: "ねぇ" },
       { title: "ドキドキ", ruby: "どきどき" },
@@ -110,6 +122,8 @@ export const albums = [
   {
     name: "SHISHAMO 6",
     color: "#462727ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-6/1492207185",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/4WWffNfS89ASWOPRbJErja?utm_source=generator",
     songs: [
       { title: "天使みたい", ruby: "てんしみたい" },
       { title: "ひっちゃかめっちゃか", ruby: "ひっちゃかめっちゃか" },
@@ -130,6 +144,8 @@ export const albums = [
   {
     name: "SHISHAMO 7",
     color: "#ff8d40ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-7/1566260218",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/2p074ywYtKAJGyJT6ESvPe?utm_source=generator",
     songs: [
       { title: "中毒", ruby: "ちゅうどく" },
       { title: "人間", ruby: "にんげん" },
@@ -153,6 +169,8 @@ export const albums = [
   {
     name: "SHISHAMO 8",
     color: "#0cb906ff",
+    appleMusicEmbedUrl: "https://embed.music.apple.com/jp/album/shishamo-8/1739303404",
+    spotifyEmbedUrl: "https://open.spotify.com/embed/album/629Tqastk0qbtWCp8IAYCO?utm_source=generator",
     songs: [
       { title: "最高速度", ruby: "さいこうそくど" },
       { title: "夏恋注意報", ruby: "なつこいちゅういほう" },
@@ -201,13 +219,13 @@ export const albums = [
     name: "OTHERS",
     color: "rgb(194, 135, 233)",
     songs: [
-      { title: "URAWA-City / SAKEROCK", ruby: "うらわしてぃ" },
-      { title: "真夏の果実 / 宮崎朝子", ruby: "まなつのかじつ" },
-      { title: "東の窓 / The ピーズ", ruby: "ひがしのまど" },
+      { title: "URAWA-City ／ SAKEROCK", ruby: "うらわしてぃ" },
+      { title: "真夏の果実 ／ 宮崎朝子", ruby: "まなつのかじつ" },
+      { title: "東の窓 ／ The ピーズ", ruby: "ひがしのまど" },
       { title: "列伝永遠に", ruby: "れつでんとわに" },
-      { title: "全力少年 / SHISHAMO", ruby: "ぜんりょくしょうねん" },
+      { title: "全力少年 ／ SHISHAMO", ruby: "ぜんりょくしょうねん" },
       {
-        title: "教えてウロボロス / 東京スカパラダイスオーケストラ feat.宮崎朝子",
+        title: "教えてウロボロス ／ 東京スカパラダイスオーケストラ feat.宮崎朝子",
         ruby: "おしえてうろぼろす",
       },
     ],

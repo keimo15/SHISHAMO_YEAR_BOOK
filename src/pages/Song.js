@@ -13,9 +13,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { albums } from "../data/songs";
+import { fromFirestoreDocId, toFirestoreDocId } from "../utils/firestoreIds";
+import { normalizeSongTitle } from "../utils/songTitles";
 import bcrypt from "bcryptjs";
 import { Trash2 } from "lucide-react";
 import EmptyNote from "../components/EmptyNote";
+import LikeButton from "../components/LikeButton";
 
 const YELLOW_SONGS = new Set(["はなればなれでも", "マフラー"]);
 const BLUE_SONGS = new Set([
@@ -43,6 +46,7 @@ export default function SongsPage() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [sortOrder, setSortOrder] = useState("new");
   const [songCounts, setSongCounts] = useState({});
+  const [playerService, setPlayerService] = useState("apple");
 
   // 件数取得.
   useEffect(() => {
@@ -54,7 +58,8 @@ export default function SongsPage() {
       const counts = {};
 
       snapshot.forEach((doc) => {
-        counts[doc.id] = doc.data().count || 0;
+        const title = normalizeSongTitle(fromFirestoreDocId(doc.id));
+        counts[title] = (counts[title] || 0) + (doc.data().count || 0);
       });
 
       setSongCounts(counts);
@@ -127,19 +132,54 @@ export default function SongsPage() {
     (sum, count) => sum + count,
     0
   );
+  const goToPost = () => {
+    navigate("/post", {
+      state: {
+        postPreset: {
+          form: "song",
+          ...(selectedSong ? { song: selectedSong } : {}),
+        },
+      },
+    });
+  };
 
   // 🔸 曲選択時の投稿
   const filteredPosts = useMemo(() => {
     const getCreatedAt = (post) => post.createdAt?.toMillis?.() || 0;
 
-    return [...posts].sort((a, b) =>
-      sortOrder === "new"
+    return [...posts].sort((a, b) => {
+      if (sortOrder === "likes") {
+        const likeDiff = (b.likes || 0) - (a.likes || 0);
+        return likeDiff || getCreatedAt(b) - getCreatedAt(a);
+      }
+
+      return sortOrder === "new"
         ? getCreatedAt(b) - getCreatedAt(a)
-        : getCreatedAt(a) - getCreatedAt(b)
-    );
+        : getCreatedAt(a) - getCreatedAt(b);
+    });
   }, [posts, sortOrder]);
 
+  const handleLikeChange = (postId, likes) => {
+    setPosts((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, likes } : post))
+    );
+  };
+
   const visiblePosts = filteredPosts.slice(0, visibleCount);
+  const playerOptions = useMemo(
+    () => [
+      { id: "apple", label: "Apple Music", url: currentAlbum?.appleMusicEmbedUrl },
+      { id: "spotify", label: "Spotify", url: currentAlbum?.spotifyEmbedUrl },
+    ],
+    [currentAlbum]
+  );
+  const availablePlayerOptions =
+    selectedAlbum === RANKING_ALBUM.name
+      ? []
+      : playerOptions.filter((option) => option.url);
+  const activePlayer =
+    availablePlayerOptions.find((option) => option.id === playerService) ||
+    availablePlayerOptions[0];
 
   useEffect(() => {
     if (!selectedSong) return;
@@ -149,10 +189,11 @@ export default function SongsPage() {
 
       if (!el) return;
 
+      const scrollOffset = window.innerWidth <= 768 ? 110 : 150;
       const y =
         el.getBoundingClientRect().top +
         window.scrollY -
-        300;
+        scrollOffset;
 
       window.scrollTo({
         top: y,
@@ -182,15 +223,17 @@ export default function SongsPage() {
     );
 
     await updateDoc(
-      doc(db, "songCounts", post.song),
+      doc(db, "songCounts", toFirestoreDocId(post.song)),
       {
         count: increment(-1),
       }
     );
 
+    const songCountKey = normalizeSongTitle(post.song);
+
     setSongCounts(prev => ({
       ...prev,
-      [post.song]: (prev[post.song] || 0) - 1,
+      [songCountKey]: (prev[songCountKey] || 0) - 1,
     }));
 
     setPosts((prev) =>
@@ -229,6 +272,19 @@ export default function SongsPage() {
           もくじ
         </button>
       </div>
+      <button
+        onClick={goToPost}
+        style={{
+          ...buttonStyle,
+          position: "fixed",
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          background: "#e0ad45",
+        }}
+      >
+        投稿する
+      </button>
 
       {/* 🔸 タイトル */}
       <div
@@ -483,7 +539,7 @@ export default function SongsPage() {
                     >
                       {song.rank}
                     </strong>
-                    <span style={{ flex: 1, fontWeight: "bold" }}>
+                    <span style={{ flex: 1, fontWeight: 900 }}>
                       {song.title}
                     </span>
                     <span style={{ color: "#9a8069", fontSize: "0.86rem" }}>
@@ -538,6 +594,74 @@ export default function SongsPage() {
           })}
         </div>
       </div>
+
+      {activePlayer && (
+        <div
+          style={{
+            maxWidth: "1100px",
+            margin: "0 auto 28px",
+            padding: "0 20px",
+          }}
+        >
+          {availablePlayerOptions.length > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "8px",
+                marginBottom: "10px",
+              }}
+            >
+              {availablePlayerOptions.map((option) => {
+                const active = activePlayer.id === option.id;
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setPlayerService(option.id)}
+                    style={{
+                      border: active
+                        ? "1px solid #d66565"
+                        : "1px solid rgba(174,139,91,0.24)",
+                      borderRadius: "999px",
+                      padding: "8px 14px",
+                      background: active ? "#ff7b7b" : "#fffdf8",
+                      color: active ? "#fff" : "#6a5140",
+                      cursor: "pointer",
+                      fontFamily: "'Yomogi', cursive",
+                      fontWeight: "bold",
+                      boxShadow: active
+                        ? "0 3px 0 rgba(126, 76, 65, 0.14)"
+                        : "1px 2px 0 rgba(145,105,64,0.08)",
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <iframe
+            title={`${selectedAlbum} ${activePlayer.label}`}
+            allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+            frameBorder="0"
+            height={activePlayer.id === "spotify" ? "380" : "450"}
+            sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation-by-user-activation"
+            src={activePlayer.url}
+            style={{
+              width: "100%",
+              display: "block",
+              margin: "0 auto",
+              overflow: "hidden",
+              borderRadius: "8px",
+              border: "1px solid rgba(174,139,91,0.2)",
+              boxShadow: "3px 4px 0 rgba(145,105,64,0.1)",
+              background: "#fffdf8",
+            }}
+          />
+        </div>
+      )}
 
       {/* 🔸 投稿カード */}
       <div
@@ -611,6 +735,23 @@ export default function SongsPage() {
                 >
                   古い順
                 </button>
+
+                <button
+                  onClick={() => setSortOrder("likes")}
+                  style={{
+                    border: "none",
+                    borderRadius: "999px",
+                    padding: "8px 14px",
+                    cursor: "pointer",
+                    background:
+                      sortOrder === "likes" ? "#ff7b7b" : "#eee",
+                    color:
+                      sortOrder === "likes" ? "#fff" : "#555",
+                    fontFamily: "'Yomogi', cursive",
+                  }}
+                >
+                  いいね順
+                </button>
               </div>
 
               {filteredPosts.length === 0 ? (
@@ -639,7 +780,7 @@ export default function SongsPage() {
                         position: "relative",
                         background: "#fffdf4",
                         borderRadius: "4px",
-                        padding: "22px",
+                        padding: "42px 46px 54px 22px",
                         boxShadow: "3px 4px 0 rgba(145,105,64,0.1)",
                         border: "1px solid rgba(174,139,91,0.2)",
                       }}
@@ -656,6 +797,19 @@ export default function SongsPage() {
                       >
                         <Trash2 size={18} />
                       </div>
+
+                      <LikeButton
+                        collectionName="favoriteSongs"
+                        postId={post.id}
+                        likes={post.likes || 0}
+                        onChange={(likes) => handleLikeChange(post.id, likes)}
+                        style={{
+                          position: "absolute",
+                          right: 12,
+                          bottom: 12,
+                          fontSize: "0.82rem",
+                        }}
+                      />
 
                       <div
                         style={{

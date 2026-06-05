@@ -8,8 +8,10 @@ import {
   doc,
   runTransaction,
 } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { allSongs } from "../data/songs";
+import { toFirestoreDocId } from "../utils/firestoreIds";
+import { normalizeSongTitle } from "../utils/songTitles";
 
 const ANONYMOUS_CONTRIBUTOR = "\u533f\u540d\u306e\u3057\u3083\u3082\u30b5\u30dd";
 const SITE_URL = "https://keimo15.github.io/SHISHAMO_YEAR_BOOK";
@@ -38,7 +40,7 @@ function shareOnX(label, content, isFirstPost = false, firstPostTarget = "") {
 }
 
 async function incrementCount(collectionName, id) {
-  const countRef = doc(db, collectionName, id);
+  const countRef = doc(db, collectionName, toFirestoreDocId(id));
   let isFirstPost = false;
 
   await runTransaction(db, async (transaction) => {
@@ -87,7 +89,19 @@ async function saveContributor(name, sns) {
 // --------------------------------------------------
 export default function PostForms({ onBack }) {
   const navigate = useNavigate();
-  const [index, setIndex] = useState(0);
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const postPreset = location.state?.postPreset || {};
+  const formFromNavigation = postPreset.form || searchParams.get("form");
+  const initialIndexByForm = {
+    message: 0,
+    song: 1,
+    memory: 2,
+    date: 3,
+  };
+  const [index, setIndex] = useState(
+    initialIndexByForm[formFromNavigation] ?? 0
+  );
   const [completedPost, setCompletedPost] = useState(null);
   const [submittingPaper, setSubmittingPaper] = useState(null);
   const [consentDialogOpen, setConsentDialogOpen] = useState(false);
@@ -130,10 +144,54 @@ export default function PostForms({ onBack }) {
     }, 900);
   };
   const forms = [
-    { component: <MessageForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "✉", title: "SHISHAMO へ", note: "メッセージ" },
-    { component: <FavoriteSongForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "♪", title: "みんなのうた", note: "好きな曲" },
-    { component: <MemoryForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "⌖", title: "マップ", note: "場所の思い出" },
-    { component: <MemoryDateForm onSubmitted={handleSubmitted} requestConsent={requestConsent} />, icon: "▣", title: "カレンダー", note: "日付の思い出" },
+    {
+      component: (
+        <MessageForm
+          onSubmitted={handleSubmitted}
+          requestConsent={requestConsent}
+          initialTarget={postPreset.target || searchParams.get("target")}
+        />
+      ),
+      icon: "✉",
+      title: "SHISHAMO へ",
+      note: "メッセージ",
+    },
+    {
+      component: (
+        <FavoriteSongForm
+          onSubmitted={handleSubmitted}
+          requestConsent={requestConsent}
+          initialSong={postPreset.song || searchParams.get("song")}
+        />
+      ),
+      icon: "♪",
+      title: "みんなのうた",
+      note: "好きな曲",
+    },
+    {
+      component: (
+        <MemoryForm
+          onSubmitted={handleSubmitted}
+          requestConsent={requestConsent}
+          initialPrefecture={postPreset.prefecture || searchParams.get("prefecture")}
+        />
+      ),
+      icon: "⌖",
+      title: "マップ",
+      note: "場所の思い出",
+    },
+    {
+      component: (
+        <MemoryDateForm
+          onSubmitted={handleSubmitted}
+          requestConsent={requestConsent}
+          initialDate={postPreset.date || searchParams.get("date")}
+        />
+      ),
+      icon: "▣",
+      title: "カレンダー",
+      note: "日付の思い出",
+    },
   ];
 
   return (
@@ -194,27 +252,6 @@ export default function PostForms({ onBack }) {
       >
         {forms[index].component}
       </div>
-
-      <button
-        onClick={() => {
-          if (onBack) {
-            onBack();
-            return;
-          }
-
-          navigate("/home0");
-        }}
-        style={{
-          marginTop: "20px",
-          background: "transparent",
-          color: "#9d3f3f",
-          textDecoration: "underline",
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        ← 目次に戻る
-      </button>
 
       {completedPost && (
         <div style={modalBackdropStyle}>
@@ -340,10 +377,10 @@ export default function PostForms({ onBack }) {
 // --------------------------------------------------
 // 各フォーム
 // --------------------------------------------------
-function MessageForm({ onSubmitted, requestConsent }) {
+function MessageForm({ onSubmitted, requestConsent, initialTarget }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
-  const [target, setTarget] = useState("SHISHAMO");
+  const [target, setTarget] = useState(initialTarget || "SHISHAMO");
   const [text, setText] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -486,12 +523,12 @@ function MessageForm({ onSubmitted, requestConsent }) {
   );
 }
 
-function MemoryForm({ onSubmitted, requestConsent }) {
+function MemoryForm({ onSubmitted, requestConsent, initialPrefecture }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
   const [category, setCategory] = useState("思い出");
   const [address, setAddress] = useState("");
-  const [prefecture, setPrefecture] = useState("");
+  const [prefecture, setPrefecture] = useState(initialPrefecture || "");
   const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -657,10 +694,10 @@ function MemoryForm({ onSubmitted, requestConsent }) {
   );
 }
 
-function MemoryDateForm({ onSubmitted, requestConsent }) {
+function MemoryDateForm({ onSubmitted, requestConsent, initialDate }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(initialDate || "");
   const [event, setEvent] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -775,10 +812,10 @@ function MemoryDateForm({ onSubmitted, requestConsent }) {
   );
 }
 
-function FavoriteSongForm({ onSubmitted, requestConsent }) {
+function FavoriteSongForm({ onSubmitted, requestConsent, initialSong }) {
   const [name, setName] = useState("");
   const [sns, setSns] = useState("");
-  const [song, setSong] = useState("");
+  const [song, setSong] = useState(initialSong || "");
   const [reason, setReason] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [password, setPassword] = useState("");
@@ -800,10 +837,12 @@ function FavoriteSongForm({ onSubmitted, requestConsent }) {
     setLoading(true);
 
     try {
+      const normalizedSong = normalizeSongTitle(song);
+
       await addDoc(collection(db, "favoriteSongs"), {
         name,
         sns,
-        song,
+        song: normalizedSong,
         reason,
         lyrics,
         random: Math.random(),
@@ -812,15 +851,15 @@ function FavoriteSongForm({ onSubmitted, requestConsent }) {
         createdAt: serverTimestamp(),
       });
 
-      const isFirstPost = await incrementCount("songCounts", song);
+      const isFirstPost = await incrementCount("songCounts", normalizedSong);
       await saveContributor(name, sns);
 
       onSubmitted({
-        label: `好きな曲: ${song}`,
+        label: `好きな曲: ${normalizedSong}`,
         content: reason,
         name: name.trim() || ANONYMOUS_CONTRIBUTOR,
         isFirstPost,
-        firstPostTarget: song,
+        firstPostTarget: normalizedSong,
       });
 
       setName("");

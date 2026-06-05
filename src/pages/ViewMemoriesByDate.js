@@ -7,6 +7,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import EmptyNote from "../components/EmptyNote";
+import LikeButton from "../components/LikeButton";
 
 export default function ViewMemoriesByDate() {
   const navigate = useNavigate();
@@ -143,10 +144,30 @@ export default function ViewMemoriesByDate() {
     alert("投稿を削除しました。");
   };
 
+  const handleLikeChange = (memoryId, likes) => {
+    setMemories((prev) =>
+      prev.map((mem) => (mem.id === memoryId ? { ...mem, likes } : mem))
+    );
+  };
+
   const visibleMemories = memories.slice(
     0,
     visibleCount
   );
+  const goToPost = () => {
+    const dateForPost = selectedDate
+      ? `${new Date().getFullYear()}-${selectedDate}`
+      : "";
+
+    navigate("/post", {
+      state: {
+        postPreset: {
+          form: "date",
+          ...(dateForPost ? { date: dateForPost } : {}),
+        },
+      },
+    });
+  };
 
   return (
     <motion.div
@@ -175,6 +196,19 @@ export default function ViewMemoriesByDate() {
           もくじ
         </button>
       </div>
+      <button
+        onClick={goToPost}
+        style={{
+          ...buttonStyle,
+          position: "fixed",
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          background: "#e0ad45",
+        }}
+      >
+        投稿する
+      </button>
 
       {/* 左側：日付スクロールリスト */}
       <motion.div
@@ -412,7 +446,7 @@ export default function ViewMemoriesByDate() {
                       background: "rgba(255,253,244,0.92)",
                       border: "1px solid rgba(177,139,91,0.18)",
                       borderRadius: "3px",
-                      padding: "20px 16px 16px",
+                      padding: "34px 44px 48px 16px",
                       boxShadow: "3px 4px 0 rgba(137,102,64,0.1)",
                     }}
                   >
@@ -439,6 +473,19 @@ export default function ViewMemoriesByDate() {
                     >
                       <Trash2 size={18} />
                     </div>
+
+                    <LikeButton
+                      collectionName="memoriesByDate"
+                      postId={m.id}
+                      likes={m.likes || 0}
+                      onChange={(likes) => handleLikeChange(m.id, likes)}
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        bottom: 10,
+                        fontSize: "0.82rem",
+                      }}
+                    />
 
                     <p
                       style={{

@@ -1,5 +1,5 @@
 // src/pages/MapMessages.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import bcrypt from "bcryptjs";
 import { deleteDoc, doc, updateDoc, increment, where,} from "firebase/firestore";
 import { Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import "./MapMessages.css";
 import EmptyNote from "../components/EmptyNote";
+import LikeButton from "../components/LikeButton";
 
 export default function JapanMapFullScreen() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function JapanMapFullScreen() {
   const [showSeichi, setShowSeichi] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10);
   const [prefectureCounts, setPrefectureCounts] = useState({});
+  const memoryPanelRef = useRef(null);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -61,6 +63,28 @@ export default function JapanMapFullScreen() {
     fetchMemories();
   }, [selectedPref]);
 
+  useEffect(() => {
+    if (!selectedPref || !isMobile) return;
+
+    const timer = setTimeout(() => {
+      const el = memoryPanelRef.current;
+
+      if (!el) return;
+
+      const y =
+        el.getBoundingClientRect().top +
+        window.scrollY -
+        16;
+
+      window.scrollTo({
+        top: y,
+        behavior: "smooth",
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [selectedPref, isMobile]);
+
   // クリックされた県名を受け取ってstate更新
   const handlePrefClick = (prefName) => {
     setSelectedPref(prefName);
@@ -93,6 +117,12 @@ export default function JapanMapFullScreen() {
   };
 
   // 選択中の県の思い出を抽出
+  const handleLikeChange = (memoryId, likes) => {
+    setMemories((prev) =>
+      prev.map((mem) => (mem.id === memoryId ? { ...mem, likes } : mem))
+    );
+  };
+
   const filteredMemories =
     selectedPref && memories
       ? memories.filter((m) => {
@@ -113,6 +143,16 @@ export default function JapanMapFullScreen() {
     (sum, count) => sum + count,
     0
   );
+  const goToPost = () => {
+    navigate("/post", {
+      state: {
+        postPreset: {
+          form: "memory",
+          ...(selectedPref ? { prefecture: selectedPref } : {}),
+        },
+      },
+    });
+  };
 
   // ========================================
   // 4. JapanMap への反映（propsとして渡す）
@@ -124,6 +164,22 @@ export default function JapanMapFullScreen() {
       <div className="map-toolbar">
         <button onClick={() => navigate("/home0")} style={buttonStyle}>
           もくじ
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            goToPost();
+          }}
+          style={{
+            ...buttonStyle,
+            position: "fixed",
+            top: 10,
+            right: 10,
+            zIndex: 1000,
+            background: "#e0ad45",
+          }}
+        >
+          投稿する
         </button>
 
         <div className="map-filters" onClick={(e) => e.stopPropagation()}>
@@ -178,7 +234,10 @@ export default function JapanMapFullScreen() {
 
           <div className="map-legend">
             <span><i className="legend-swatch empty" />まだ投稿なし</span>
-            <span><i className="legend-swatch posted" />投稿あり</span>
+            <span><i className="legend-swatch count-1" />1件</span>
+            <span><i className="legend-swatch count-2" />2-3件</span>
+            <span><i className="legend-swatch count-4" />4-7件</span>
+            <span><i className="legend-swatch count-8" />8件以上</span>
             <strong>{totalCount}件の思い出</strong>
           </div>
         </div>
@@ -188,6 +247,7 @@ export default function JapanMapFullScreen() {
       <AnimatePresence>
       {selectedPref && (
         <motion.div
+          ref={memoryPanelRef}
           key={selectedPref}
           initial={{ opacity: 0, x: isMobile ? 0 : 40, y: isMobile ? 16 : 0 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
@@ -232,6 +292,20 @@ export default function JapanMapFullScreen() {
             >
               <Trash2 size={16} />
             </div>
+
+            <LikeButton
+              collectionName="memories"
+              postId={mem.id}
+              likes={mem.likes || 0}
+              onChange={(likes) => handleLikeChange(mem.id, likes)}
+              size={15}
+              style={{
+                position: "absolute",
+                right: 8,
+                bottom: 8,
+                fontSize: "0.78rem",
+              }}
+            />
 
             {/* カテゴリ */}
             <div

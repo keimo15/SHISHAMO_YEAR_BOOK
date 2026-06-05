@@ -15,8 +15,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2 } from "lucide-react"; // ← ゴミ箱アイコン
 import EmptyNote from "../components/EmptyNote";
+import LikeButton from "../components/LikeButton";
 
-const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#c99500", "#7bffb5", "#7bafff", "#da7bff", "#ff7bd8"];
+const MESSAGE_COLORS = ["#ff7b7b", "#ffa74d", "#c99500", "#45d88f", "#7bafff", "#da7bff", "#ff7bd8"];
 const MOBILE_BREAKPOINT = 768;
 const PAGE_SIZE = 20;
 const getNoteSize = (text = "") => {
@@ -42,7 +43,7 @@ const getBoardSize = () =>
         height: Math.max(window.innerHeight, 4500),
       };
 const shuffle = (items) => [...items].sort(() => Math.random() - 0.5);
-const getLooseGridStyles = (messages) => {
+const getLooseGridStyles = (messages, { preserveOrder = false } = {}) => {
   const { width, height } = getBoardSize();
   const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   const columns = 4;
@@ -51,12 +52,10 @@ const getLooseGridStyles = (messages) => {
   const rowHeight = isMobile ? 130 : 390;
   const columnWidth = (width - sidePadding * 2) / columns;
   const horizontalOffset = isMobile ? -54 : -78;
-  const longMessages = shuffle(
-    messages.filter((msg) => msg.text.trim().length >= 90)
-  );
-  const shortMessages = shuffle(
-    messages.filter((msg) => msg.text.trim().length < 90)
-  );
+  const longSource = messages.filter((msg) => msg.text.trim().length >= 90);
+  const shortSource = messages.filter((msg) => msg.text.trim().length < 90);
+  const longMessages = preserveOrder ? longSource : shuffle(longSource);
+  const shortMessages = preserveOrder ? shortSource : shuffle(shortSource);
   const placements = [];
   const placementCountByColumn = [0, 0, 0, 0];
 
@@ -108,6 +107,7 @@ export default function ViewMessages() {
   const [pageIndex, setPageIndex] = useState(0);
   const [hasOlderMessages, setHasOlderMessages] = useState(true);
   const [loadingPage, setLoadingPage] = useState(false);
+  const [isTopLikedMode, setIsTopLikedMode] = useState(false);
 
   // 🔹 Firestoreから最新20件を取得
   useEffect(() => {
@@ -134,6 +134,7 @@ export default function ViewMessages() {
   }, []);
 
   const showOlderMessages = async () => {
+    setIsTopLikedMode(false);
     const cachedPage = messagePages[pageIndex + 1];
     if (cachedPage) {
       setPageIndex((current) => current + 1);
@@ -176,7 +177,13 @@ export default function ViewMessages() {
   };
 
   const showNewerMessages = () => {
-    if (pageIndex <= 0) return;
+    setIsTopLikedMode(false);
+    if (pageIndex <= 0) {
+      setPageIndex(0);
+      setMessages(messagePages[0]?.messages || []);
+      setHasOlderMessages(true);
+      return;
+    }
 
     const nextIndex = pageIndex - 1;
     setPageIndex(nextIndex);
@@ -184,8 +191,43 @@ export default function ViewMessages() {
     setHasOlderMessages(true);
   };
 
+  const showTopLikedMessages = async () => {
+    if (loadingPage) return;
+
+    setLoadingPage(true);
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, "messages"),
+          orderBy("createdAt", "desc")
+        )
+      );
+      const data = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const likeDiff = (b.likes || 0) - (a.likes || 0);
+          if (likeDiff !== 0) return likeDiff;
+
+          const aCreatedAt = a.createdAt?.toMillis?.() || 0;
+          const bCreatedAt = b.createdAt?.toMillis?.() || 0;
+          return bCreatedAt - aCreatedAt;
+        })
+        .slice(0, PAGE_SIZE);
+
+      setIsTopLikedMode(true);
+      setPageIndex(0);
+      setMessages(data);
+    } catch (err) {
+      console.error("Error fetching top liked messages:", err);
+      alert("いいねが多い付箋の読み込みに失敗しました。");
+    } finally {
+      setLoadingPage(false);
+    }
+  };
+
   useEffect(() => {
     if (messagePages.length === 0) return;
+    if (isTopLikedMode) return;
 
     if (targetFilter === "ALL") {
       setMessages(messagePages[pageIndex]?.messages || []);
@@ -197,10 +239,11 @@ export default function ViewMessages() {
       .filter((msg) => msg.target === targetFilter)
       .slice(0, PAGE_SIZE);
     setMessages(matchingMessages);
-  }, [messagePages, pageIndex, targetFilter]);
+  }, [isTopLikedMode, messagePages, pageIndex, targetFilter]);
 
   useEffect(() => {
     if (
+      isTopLikedMode ||
       targetFilter === "ALL" ||
       messagePages.length === 0 ||
       loadingPage ||
@@ -248,17 +291,17 @@ export default function ViewMessages() {
     };
 
     fetchMoreFilteredMessages();
-  }, [hasOlderMessages, loadingPage, messagePages, targetFilter]);
+  }, [hasOlderMessages, isTopLikedMode, loadingPage, messagePages, targetFilter]);
 
   // 🔹 付箋スタイル生成
   const generateRandomStyles = useCallback((msgs) =>
-    getLooseGridStyles(msgs).map((msg) => ({
+    getLooseGridStyles(msgs, { preserveOrder: isTopLikedMode }).map((msg) => ({
         ...msg,
         color: MESSAGE_COLORS[Math.floor(Math.random() * MESSAGE_COLORS.length)],
         fontSize: window.innerWidth <= MOBILE_BREAKPOINT
           ? `${Math.random() * 0.04 + 0.38}rem`
           : `${Math.random() * 0.4 + 1}rem`,
-      })), []);
+      })), [isTopLikedMode]);
 
   // 🔹 初期表示＆ハイライト投稿の遅延表示
   useEffect(() => {
@@ -293,7 +336,9 @@ export default function ViewMessages() {
 
   // 🔹 背景クリックで再配置（シャッフル）
   const shuffleLayout = () => {
-    setStyledMessages((prev) => getLooseGridStyles(prev));
+    setStyledMessages((prev) =>
+      getLooseGridStyles(prev, { preserveOrder: isTopLikedMode })
+    );
   };
   const bringToFront = (messageId) => {
     setStyledMessages((prev) => {
@@ -333,6 +378,13 @@ export default function ViewMessages() {
   };
 
   // 🔹 検索
+  const handleLikeChange = (messageId, likes) => {
+    const updateMessage = (msg) =>
+      msg.id === messageId ? { ...msg, likes } : msg;
+
+    setStyledMessages((prev) => prev.map(updateMessage));
+  };
+
   const filteredMessages = styledMessages.filter((m) => {
     if (
       targetFilter !== "ALL" &&
@@ -358,6 +410,16 @@ export default function ViewMessages() {
   const returnToContents = () => {
     window.scrollTo({ top: 0, left: 0 });
     navigate("/home0");
+  };
+  const goToPost = () => {
+    navigate("/post", {
+      state: {
+        postPreset: {
+          form: "message",
+          ...(targetFilter !== "ALL" ? { target: targetFilter } : {}),
+        },
+      },
+    });
   };
 
   useEffect(() => {
@@ -410,9 +472,30 @@ export default function ViewMessages() {
           zIndex: 1000,
         }}
       >
-        <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            width: "100%",
+            paddingRight: "96px",
+            boxSizing: "border-box",
+          }}
+        >
           <button onClick={returnToContents} style={buttonStyle}>
             もくじ
+          </button>
+          <button
+            onClick={goToPost}
+            style={{
+              ...buttonStyle,
+              position: "fixed",
+              top: 10,
+              right: 10,
+              zIndex: 1000,
+              background: "#e0ad45",
+            }}
+          >
+            投稿する
           </button>
           <input
             type="text"
@@ -449,7 +532,10 @@ export default function ViewMessages() {
           ].map((target) => (
             <button
               key={target}
-              onClick={() => setTargetFilter(target)}
+              onClick={() => {
+                setIsTopLikedMode(false);
+                setTargetFilter(target);
+              }}
               style={{
                 ...buttonStyle,
                 flexShrink: 0,
@@ -470,7 +556,7 @@ export default function ViewMessages() {
               gap: "8px",
             }}
           >
-            {pageIndex > 0 && (
+            {(pageIndex > 0 || isTopLikedMode) && (
               <button
                 type="button"
                 onClick={showNewerMessages}
@@ -490,6 +576,17 @@ export default function ViewMessages() {
                 {loadingPage ? "読み込み中..." : "古い付箋を見る"}
               </button>
             )}
+            <button
+              type="button"
+              onClick={showTopLikedMessages}
+              disabled={loadingPage}
+              style={{
+                ...buttonStyle,
+                background: isTopLikedMode ? "#ff7b7b" : "#e46c6c",
+              }}
+            >
+              {loadingPage && isTopLikedMode ? "読み込み中..." : "人気の付箋"}
+            </button>
           </div>
         )}
 
@@ -536,7 +633,7 @@ export default function ViewMessages() {
               transform: "translate(-50%, -50%)",
               background: "rgba(255,255,255,0.96)",
               color: msg.color,
-              padding: window.innerWidth <= MOBILE_BREAKPOINT ? "5px 6px" : "10px 14px",
+              padding: window.innerWidth <= MOBILE_BREAKPOINT ? "13px 18px 18px 6px" : "32px 42px 38px 14px",
               boxSizing: "border-box",
               borderRadius: "12px",
               boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
@@ -579,6 +676,21 @@ export default function ViewMessages() {
             >
               <Trash2 size={window.innerWidth <= MOBILE_BREAKPOINT ? 11 : 18} />
             </div>
+
+            <LikeButton
+              collectionName="messages"
+              postId={msg.id}
+              likes={msg.likes || 0}
+              onChange={(likes) => handleLikeChange(msg.id, likes)}
+              size={window.innerWidth <= MOBILE_BREAKPOINT ? 10 : 16}
+              style={{
+                position: "absolute",
+                right: window.innerWidth <= MOBILE_BREAKPOINT ? 3 : 7,
+                bottom: window.innerWidth <= MOBILE_BREAKPOINT ? 3 : 7,
+                padding: window.innerWidth <= MOBILE_BREAKPOINT ? "2px 4px" : "4px 7px",
+                fontSize: window.innerWidth <= MOBILE_BREAKPOINT ? "0.34rem" : "0.78rem",
+              }}
+            />
 
             <p
               style={{
@@ -644,9 +756,10 @@ export default function ViewMessages() {
       {messages.length === 0 && (
         <EmptyNote
           style={{
-            position: "absolute",
+            position: "fixed",
             top: "50%",
             left: "50%",
+            zIndex: 850,
             transform: "translate(-50%, -50%)",
             width: "min(88vw, 360px)",
             margin: 0,

@@ -1,6 +1,14 @@
 // src/pages/JapanMap.jsx
 import React, { useState } from 'react';
 
+const COUNT_COLOR_STEPS = [
+  { min: 15, color: '#a92f3f' },
+  { min: 8, color: '#c8424c' },
+  { min: 4, color: '#df5f61' },
+  { min: 2, color: '#ee8d82' },
+  { min: 1, color: '#f7beb6' },
+];
+
 export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
   const [hoveredPref, setHoveredPref] = useState(null);
 
@@ -19,12 +27,8 @@ export default function JapanMap({ selectedPref, prefCounts, onPrefClick }) {
 
     if (count === 0) return '#eee8df'; // 投稿0件は灰色
 
-    // 投稿数が多いほど赤を濃く
-    const intensity = Math.min(count, 30) / 30; // 最大30件でスケール
-    const r = Math.floor(238 - intensity * 34);
-    const g = Math.floor(166 - intensity * 78);
-    const b = Math.floor(162 - intensity * 70);
-    return `rgb(${r},${g},${b})`;
+    const step = COUNT_COLOR_STEPS.find(({ min }) => count >= min);
+    return step?.color || COUNT_COLOR_STEPS.at(-1).color;
   };
 
   return (
