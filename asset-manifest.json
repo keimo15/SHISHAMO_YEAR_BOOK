@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/SHISHAMO_YEAR_BOOK/static/css/main.22cad8a2.css",
-    "main.js": "/SHISHAMO_YEAR_BOOK/static/js/main.cb792beb.js",
+    "main.js": "/SHISHAMO_YEAR_BOOK/static/js/main.f21e3a76.js",
     "static/js/453.2d6c170c.chunk.js": "/SHISHAMO_YEAR_BOOK/static/js/453.2d6c170c.chunk.js",
     "index.html": "/SHISHAMO_YEAR_BOOK/index.html",
     "main.22cad8a2.css.map": "/SHISHAMO_YEAR_BOOK/static/css/main.22cad8a2.css.map",
-    "main.cb792beb.js.map": "/SHISHAMO_YEAR_BOOK/static/js/main.cb792beb.js.map",
+    "main.f21e3a76.js.map": "/SHISHAMO_YEAR_BOOK/static/js/main.f21e3a76.js.map",
     "453.2d6c170c.chunk.js.map": "/SHISHAMO_YEAR_BOOK/static/js/453.2d6c170c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.22cad8a2.css",
-    "static/js/main.cb792beb.js"
+    "static/js/main.f21e3a76.js"
   ]
 }
