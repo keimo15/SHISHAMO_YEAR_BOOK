@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/SHISHAMO_YEAR_BOOK/static/css/main.4f523a00.css",
-    "main.js": "/SHISHAMO_YEAR_BOOK/static/js/main.ca873cf0.js",
+    "main.css": "/SHISHAMO_YEAR_BOOK/static/css/main.f7946cba.css",
+    "main.js": "/SHISHAMO_YEAR_BOOK/static/js/main.1dff4075.js",
     "static/js/453.2d6c170c.chunk.js": "/SHISHAMO_YEAR_BOOK/static/js/453.2d6c170c.chunk.js",
     "index.html": "/SHISHAMO_YEAR_BOOK/index.html",
-    "main.4f523a00.css.map": "/SHISHAMO_YEAR_BOOK/static/css/main.4f523a00.css.map",
-    "main.ca873cf0.js.map": "/SHISHAMO_YEAR_BOOK/static/js/main.ca873cf0.js.map",
+    "main.f7946cba.css.map": "/SHISHAMO_YEAR_BOOK/static/css/main.f7946cba.css.map",
+    "main.1dff4075.js.map": "/SHISHAMO_YEAR_BOOK/static/js/main.1dff4075.js.map",
     "453.2d6c170c.chunk.js.map": "/SHISHAMO_YEAR_BOOK/static/js/453.2d6c170c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4f523a00.css",
-    "static/js/main.ca873cf0.js"
+    "static/css/main.f7946cba.css",
+    "static/js/main.1dff4075.js"
   ]
 }
